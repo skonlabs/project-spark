@@ -26,35 +26,35 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen flex bg-background">
-      {/* Left — branding */}
-      <div className="hidden lg:flex lg:w-1/2 relative items-center justify-center border-r border-border">
-        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5 }} className="max-w-sm px-12">
-          <div className="flex items-center gap-2 mb-8">
-            <div className="h-8 w-8 rounded-md bg-primary flex items-center justify-center">
+      {/* Left branding */}
+      <div className="hidden lg:flex lg:w-[45%] relative items-center justify-center border-r border-border bg-card/30">
+        <motion.div initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5 }} className="max-w-[340px] px-12">
+          <div className="flex items-center gap-2 mb-10">
+            <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
               <span className="text-primary-foreground font-bold text-sm">G</span>
             </div>
             <span className="font-heading font-bold text-xl tracking-tight">GAEO</span>
           </div>
-          <h2 className="text-2xl font-heading font-bold tracking-tight mb-3 leading-tight">
+          <h2 className="text-[1.75rem] font-heading font-bold tracking-tight mb-3 leading-tight">
             Your brand in every<br /><span className="text-primary">AI answer.</span>
           </h2>
           <p className="text-muted-foreground text-sm leading-relaxed">Join hundreds of companies already optimizing their AI visibility.</p>
-          <div className="mt-8 grid grid-cols-3 gap-4">
-            {[{ v: "42→78", l: "Score uplift" }, { v: "3.2×", l: "More citations" }, { v: "14 days", l: "To first results" }].map((s) => (
+          <div className="mt-10 grid grid-cols-3 gap-6">
+            {[{ v: "42→78", l: "Score uplift" }, { v: "3.2×", l: "More citations" }, { v: "14 days", l: "First results" }].map((s) => (
               <div key={s.l} className="text-center">
-                <div className="text-base font-heading font-bold text-primary">{s.v}</div>
-                <div className="text-[10px] text-muted-foreground/50 mt-0.5">{s.l}</div>
+                <div className="text-lg font-heading font-bold text-primary">{s.v}</div>
+                <div className="text-[10px] text-muted-foreground/40 mt-0.5">{s.l}</div>
               </div>
             ))}
           </div>
         </motion.div>
       </div>
 
-      {/* Right — form */}
+      {/* Right form */}
       <div className="flex-1 flex items-center justify-center px-6">
-        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="w-full max-w-sm">
-          <div className="lg:hidden flex items-center justify-center gap-2 mb-8">
-            <div className="h-8 w-8 rounded-md bg-primary flex items-center justify-center">
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="w-full max-w-[360px]">
+          <div className="lg:hidden flex items-center justify-center gap-2 mb-10">
+            <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
               <span className="text-primary-foreground font-bold text-sm">G</span>
             </div>
             <span className="font-heading font-bold text-xl tracking-tight">GAEO</span>
