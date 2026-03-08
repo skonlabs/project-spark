@@ -20,13 +20,12 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import {
-  findContent,
-  CONTENT_ANALYSIS,
   getProductPrompts,
   addPromptsToProduct,
   type GapSeverity,
   type LLMIntentType,
 } from "@/data/products";
+import { useContent } from "@/contexts/ContentContext";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -222,6 +221,7 @@ AI visibility is the new SEO. The companies that invest in AI-optimized content 
 export default function ContentDetailPage() {
   const { contentId } = useParams<{ contentId: string }>();
   const navigate = useNavigate();
+  const { findContent, getAnalysis } = useContent();
 
   const [activeTab, setActiveTab] = useState<Tab>("original");
 
@@ -277,7 +277,7 @@ export default function ContentDetailPage() {
   }
 
   const { product, folder, item } = result;
-  const analysis = CONTENT_ANALYSIS[item.id] ?? null;
+  const analysis = getAnalysis(item.id);
   const activeContent =
     useGenerated && generatedContent
       ? generatedContent

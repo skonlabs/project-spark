@@ -20,13 +20,14 @@ import {
   BarChart2,
 } from "lucide-react";
 import toast from "react-hot-toast";
-import { MOCK_PRODUCTS } from "@/data/products";
+import { useContent } from "@/contexts/ContentContext";
 
 type IngestMethod = "url" | "file";
 
 export default function DashboardLayout() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { products, addContentItem, updateItemStatus } = useContent();
   const [user, setUser] = useState<{ full_name: string; email: string } | null>(null);
 
   // Explorer state
@@ -39,7 +40,7 @@ export default function DashboardLayout() {
 
   // Ingest modal state
   const [showIngest, setShowIngest] = useState(false);
-  const [ingestTarget, setIngestTarget] = useState<{ productName: string; folderName: string } | null>(null);
+  const [ingestTarget, setIngestTarget] = useState<{ productId: string; folderId: string; productName: string; folderName: string } | null>(null);
   const [ingestMethod, setIngestMethod] = useState<IngestMethod>("url");
   const [ingestUrl, setIngestUrl] = useState("");
   const [ingestLoading, setIngestLoading] = useState(false);
@@ -69,21 +70,37 @@ export default function DashboardLayout() {
     });
   }
 
-  function openIngest(productName: string, folderName: string) {
-    setIngestTarget({ productName, folderName });
+  function openIngest(productId: string, folderId: string, productName: string, folderName: string) {
+    setIngestTarget({ productId, folderId, productName, folderName });
     setIngestUrl("");
     setIngestMethod("url");
     setShowIngest(true);
   }
 
   function handleIngest() {
+    if (!ingestTarget) return;
     if (!ingestUrl && ingestMethod === "url") return;
     setIngestLoading(true);
     setTimeout(() => {
+      const title = ingestMethod === "url"
+        ? (ingestUrl.split("/").filter(Boolean).pop() ?? "Untitled") .replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+        : "Uploaded Document";
+      const itemId = addContentItem({
+        productId: ingestTarget.productId,
+        folderId: ingestTarget.folderId,
+        title,
+        url: ingestMethod === "url" ? ingestUrl : "#",
+        source_type: ingestMethod === "url" ? "url" : "file",
+      });
+      // Simulate analysis completing after 3s
+      setTimeout(() => {
+        updateItemStatus(itemId, "analyzed", Math.floor(Math.random() * 35) + 35);
+      }, 3000);
       setIngestLoading(false);
       setShowIngest(false);
-      toast.success(`Content ingested into ${ingestTarget?.folderName} — analysis will complete shortly.`);
-    }, 1500);
+      toast.success(`"${title}" added to ${ingestTarget.folderName} — analysing now…`);
+      navigate(`/dashboard/content/${itemId}`);
+    }, 1200);
   }
 
   function handleLogout() {
@@ -132,7 +149,7 @@ export default function DashboardLayout() {
             </button>
           </div>
 
-          {MOCK_PRODUCTS.map((product) => {
+          {products.map((product) => {
             const isExpanded = expandedProducts.has(product.id);
             const allItems = product.folders.flatMap((f) => f.items);
             const analyzedCount = allItems.filter((i) => i.status === "analyzed").length;
@@ -223,7 +240,7 @@ export default function DashboardLayout() {
 
                               {/* Ingest button */}
                               <button
-                                onClick={() => openIngest(product.name, folder.name)}
+                                onClick={() => openIngest(product.id, folder.id, product.name, folder.name)}
                                 className="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-accent/60 transition-colors w-full mt-0.5"
                               >
                                 <Plus className="h-3 w-3 flex-shrink-0" />
