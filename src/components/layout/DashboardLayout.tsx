@@ -3,12 +3,16 @@ import { Link, useLocation, useNavigate, Outlet } from "react-router-dom";
 import {
   BarChart3,
   Bell,
+  Bot,
   Brain,
   FileText,
+  FolderOpen,
   LayoutDashboard,
   LogOut,
   Map,
   Monitor,
+  Search,
+  Send,
   Settings,
   Swords,
   User,
@@ -21,8 +25,20 @@ const navItems = [
   { label: "LLM Simulation", icon: Brain, href: "/dashboard/simulation" },
   { label: "Competitive Analysis", icon: Swords, href: "/dashboard/competitive" },
   { label: "Topic Graph", icon: Map, href: "/dashboard/topics" },
-  { label: "Content", icon: FileText, href: "/dashboard/content" },
+  { label: "Prompt Engine", icon: Search, href: "/dashboard/prompts" },
   { label: "Monitoring", icon: Monitor, href: "/dashboard/monitoring" },
+];
+
+const toolItems = [
+  { label: "Content", icon: FileText, href: "/dashboard/content" },
+  { label: "Generate Content", icon: Zap, href: "/dashboard/content/generate" },
+  { label: "Publish", icon: Send, href: "/dashboard/publish" },
+  { label: "AI Agent", icon: Bot, href: "/dashboard/agent" },
+];
+
+const manageItems = [
+  { label: "Projects", icon: FolderOpen, href: "/dashboard/projects" },
+  { label: "Settings", icon: Settings, href: "/dashboard/settings" },
 ];
 
 export default function DashboardLayout() {
@@ -49,6 +65,22 @@ export default function DashboardLayout() {
     return location.pathname.startsWith(href);
   }
 
+  function NavLink({ item }: { item: { label: string; icon: React.ElementType; href: string; exact?: boolean } }) {
+    const Icon = item.icon;
+    const active = isActive(item.href, item.exact);
+    return (
+      <Link
+        to={item.href}
+        className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors ${
+          active ? "bg-primary/15 text-primary font-medium" : "text-muted-foreground hover:text-foreground hover:bg-accent"
+        }`}
+      >
+        <Icon className="h-4 w-4 flex-shrink-0" />
+        {item.label}
+      </Link>
+    );
+  }
+
   return (
     <div className="flex h-screen bg-background overflow-hidden">
       {/* Sidebar */}
@@ -62,36 +94,35 @@ export default function DashboardLayout() {
           </Link>
         </div>
 
-        <nav className="flex-1 overflow-y-auto py-4 px-2">
-          <div className="space-y-0.5">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const active = isActive(item.href, item.exact);
-              return (
-                <Link
-                  key={item.href}
-                  to={item.href}
-                  className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors ${
-                    active ? "bg-primary/15 text-primary font-medium" : "text-muted-foreground hover:text-foreground hover:bg-accent"
-                  }`}
-                >
-                  <Icon className="h-4 w-4 flex-shrink-0" />
-                  {item.label}
-                </Link>
-              );
-            })}
+        <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-4">
+          {/* Main navigation */}
+          <div>
+            <p className="text-xs font-medium text-muted-foreground/60 uppercase tracking-wider px-3 mb-1.5">Analytics</p>
+            <div className="space-y-0.5">
+              {navItems.map((item) => (
+                <NavLink key={item.href} item={item} />
+              ))}
+            </div>
           </div>
 
-          <div className="mt-8 px-3">
-            <p className="text-xs font-medium text-muted-foreground/60 uppercase tracking-wider mb-2">Tools</p>
-            <Link to="/dashboard/content/generate" className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-colors">
-              <Zap className="h-4 w-4" />
-              Generate Content
-            </Link>
-            <Link to="/dashboard/settings" className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-colors">
-              <Settings className="h-4 w-4" />
-              Settings
-            </Link>
+          {/* Tools */}
+          <div>
+            <p className="text-xs font-medium text-muted-foreground/60 uppercase tracking-wider px-3 mb-1.5">Content Tools</p>
+            <div className="space-y-0.5">
+              {toolItems.map((item) => (
+                <NavLink key={item.href} item={item} />
+              ))}
+            </div>
+          </div>
+
+          {/* Manage */}
+          <div>
+            <p className="text-xs font-medium text-muted-foreground/60 uppercase tracking-wider px-3 mb-1.5">Manage</p>
+            <div className="space-y-0.5">
+              {manageItems.map((item) => (
+                <NavLink key={item.href} item={item} />
+              ))}
+            </div>
           </div>
         </nav>
 
@@ -115,10 +146,10 @@ export default function DashboardLayout() {
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <header className="h-14 flex items-center px-6 border-b border-border flex-shrink-0">
           <div className="flex items-center gap-4 ml-auto">
-            <button className="relative text-muted-foreground hover:text-foreground">
+            <Link to="/dashboard/monitoring" className="relative text-muted-foreground hover:text-foreground">
               <Bell className="h-5 w-5" />
               <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-primary" />
-            </button>
+            </Link>
             <div className="h-7 w-7 rounded-full bg-primary/20 flex items-center justify-center">
               <User className="h-4 w-4 text-primary" />
             </div>
