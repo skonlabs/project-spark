@@ -74,7 +74,7 @@ export default function MonitoringPage() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">AI Answer Monitoring</h1>
+          <h1 className="text-2xl font-heading font-bold tracking-tight">AI Answer Monitoring</h1>
           <p className="text-muted-foreground text-sm mt-0.5">Continuously track how AI systems mention your brand</p>
         </div>
         <button onClick={() => { setShowCreateForm(!showCreateForm); setTab("jobs"); }} className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors">

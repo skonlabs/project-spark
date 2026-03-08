@@ -71,7 +71,7 @@ export default function TopicsPage() {
     <div className="p-6 space-y-6 h-full">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Topic Ecosystem Map</h1>
+          <h1 className="text-2xl font-heading font-bold tracking-tight">Topic Ecosystem Map</h1>
           <p className="text-muted-foreground text-sm mt-0.5">Your content coverage across the AI Observability topic landscape</p>
         </div>
         <button onClick={handleRegenerate} disabled={isRegenerating} className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm hover:bg-accent transition-colors disabled:opacity-60">

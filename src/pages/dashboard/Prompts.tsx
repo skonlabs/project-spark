@@ -72,7 +72,7 @@ export default function PromptsPage() {
     <div className="p-6 lg:p-8 space-y-6">
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold" style={{ fontFamily: "'Space Grotesk'" }}>Prompt Engine</h1>
+          <h1 className="text-2xl font-heading font-bold tracking-tight">Prompt Engine</h1>
           <p className="text-muted-foreground text-sm mt-0.5">Manage prompts users ask AI systems — by interaction intent</p>
         </div>
         <button onClick={handleDiscover} disabled={isDiscovering} className="btn-primary text-xs px-4 py-2">
@@ -91,7 +91,7 @@ export default function PromptsPage() {
           <motion.div key={stat.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
             className={`bento-card text-center bg-gradient-to-br ${stat.gradient}`}
           >
-            <p className="text-3xl font-black tabular-nums" style={{ fontFamily: "'Space Grotesk'" }}>{stat.value}</p>
+            <p className="text-3xl font-heading font-black tabular-nums">{stat.value}</p>
             <p className="text-[10px] text-muted-foreground mt-1 font-medium uppercase tracking-wider">{stat.label}</p>
           </motion.div>
         ))}
@@ -141,7 +141,7 @@ export default function PromptsPage() {
                 {activeIntentMeta.icon}
               </div>
               <div>
-                <h2 className="font-bold text-sm" style={{ fontFamily: "'Space Grotesk'" }}>{activeIntentMeta.label}</h2>
+                <h2 className="font-heading font-bold text-sm">{activeIntentMeta.label}</h2>
                 <p className="text-[10px] text-muted-foreground">{activeIntentMeta.desc}</p>
               </div>
               <span className="ml-auto text-[10px] text-muted-foreground tabular-nums font-mono">{intentPrompts.length} prompts</span>
@@ -198,7 +198,7 @@ export default function PromptsPage() {
 
       {tab === "simulate" && (
         <div className="bento-card space-y-5">
-          <h2 className="font-bold text-sm" style={{ fontFamily: "'Space Grotesk'" }}>Quick Prompt Simulation</h2>
+          <h2 className="font-heading font-bold text-sm">Quick Prompt Simulation</h2>
           <p className="text-xs text-muted-foreground">Test a prompt across all major LLMs to see how your product ranks.</p>
           <div className="flex gap-2">
             <div className="relative flex-1">

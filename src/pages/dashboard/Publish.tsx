@@ -89,7 +89,7 @@ export default function PublishPage() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Publishing Connectors</h1>
+          <h1 className="text-2xl font-heading font-bold tracking-tight">Publishing Connectors</h1>
           <p className="text-muted-foreground text-sm mt-0.5">Publish AI-optimized content directly to your CMS and repositories</p>
         </div>
         <button

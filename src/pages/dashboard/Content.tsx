@@ -131,7 +131,7 @@ export default function ContentPage() {
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Content Ingestion</h1>
+        <h1 className="text-2xl font-heading font-bold tracking-tight">Content Ingestion</h1>
         <p className="text-muted-foreground text-sm mt-0.5">Import content from any source to analyse and optimise</p>
       </div>
 

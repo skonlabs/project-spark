@@ -182,7 +182,7 @@ export default function GenerateContentPage() {
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Content Generation</h1>
+        <h1 className="text-2xl font-heading font-bold tracking-tight">Content Generation</h1>
         <p className="text-muted-foreground text-sm mt-0.5">Generate AI-optimized content that LLMs cite and recommend</p>
       </div>
 
