@@ -71,13 +71,13 @@ export default function DashboardLayout() {
 
   const navSections = [
     {
-      label: "Workflow",
+      label: "Pipeline",
       links: [
         { to: "/dashboard", icon: LayoutDashboard, label: "Home", exact: true },
-        { to: "/dashboard/content", icon: Upload, label: "1. Ingest" },
-        { to: "/dashboard/analysis", icon: BarChart2, label: "2. Analyze Gaps" },
-        { to: "/dashboard/content/generate", icon: Zap, label: "3. Generate" },
-        { to: "/dashboard/publish", icon: Send, label: "4. Publish" },
+        { to: "/dashboard/content", icon: Upload, label: "Content Library" },
+        { to: "/dashboard/analysis", icon: BarChart2, label: "Gap Analysis" },
+        { to: "/dashboard/content/generate", icon: Zap, label: "Generate Queue" },
+        { to: "/dashboard/publish", icon: Send, label: "Publish" },
       ],
     },
     {
