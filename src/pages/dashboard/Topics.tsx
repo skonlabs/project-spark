@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { AlertCircle, CheckCircle2, Loader2, RefreshCw, Sparkles } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { AlertCircle, CheckCircle2, Loader2, RefreshCw, Sparkles, ArrowRight, Brain, Zap } from "lucide-react";
 import toast from "react-hot-toast";
 
 const MOCK_NODES = [
@@ -43,11 +43,6 @@ export default function TopicsPage() {
     }, 2000);
   }
 
-  function handleCreateContent(topic: string) {
-    navigate("/dashboard/content/generate");
-    toast.success(`Opening content generator for: "${topic}"`);
-  }
-
   const filteredNodes = MOCK_NODES.filter((n) => {
     if (filter === "covered") return n.covered;
     if (filter === "gaps") return !n.covered;
@@ -78,6 +73,23 @@ export default function TopicsPage() {
           {isRegenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
           {isRegenerating ? "Regenerating..." : "Regenerate Graph"}
         </button>
+      </div>
+
+      {/* Connected features bar */}
+      <div className="rounded-xl border border-border bg-card/50 p-4 flex flex-wrap items-center gap-3">
+        <span className="text-xs font-medium text-muted-foreground">Related:</span>
+        <Link to="/dashboard/analysis" className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium hover:bg-accent/40 hover:border-primary/30 transition-colors">
+          <Brain className="h-3 w-3 text-primary" /> Gap Analysis
+        </Link>
+        <Link to="/dashboard/content/generate" className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium hover:bg-accent/40 hover:border-primary/30 transition-colors">
+          <Zap className="h-3 w-3 text-primary" /> Generate Content
+        </Link>
+        <Link to="/dashboard/content" className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium hover:bg-accent/40 hover:border-primary/30 transition-colors">
+          <ArrowRight className="h-3 w-3 text-primary" /> Ingest Content
+        </Link>
+        {stats.gaps > 0 && (
+          <span className="text-[10px] text-red-400 ml-1">{stats.gaps} topic gaps need content</span>
+        )}
       </div>
 
       <div className="grid grid-cols-3 gap-4">
@@ -170,12 +182,36 @@ export default function TopicsPage() {
             <div className="mt-3 pt-3 border-t border-border">
               <p className="text-sm font-medium mb-1">Action needed:</p>
               <p className="text-sm text-muted-foreground mb-3">Create content covering "{selectedNode.label}" to fill this gap and improve your AI Visibility Score.</p>
-              <button
-                onClick={() => handleCreateContent(selectedNode.label)}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+              <div className="flex items-center gap-2">
+                <Link
+                  to={`/dashboard/content/generate?topic=${encodeURIComponent(selectedNode.label)}`}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+                >
+                  <Sparkles className="h-4 w-4" /> Generate Content
+                </Link>
+                <Link
+                  to={`/dashboard/simulation?prompt=${encodeURIComponent(`What is ${selectedNode.label}?`)}`}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                >
+                  <Brain className="h-4 w-4" /> Simulate Prompt
+                </Link>
+              </div>
+            </div>
+          )}
+          {selectedNode.covered && (
+            <div className="mt-3 pt-3 border-t border-border flex items-center gap-2">
+              <Link
+                to={`/dashboard/simulation?prompt=${encodeURIComponent(`What is ${selectedNode.label}?`)}`}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
               >
-                <Sparkles className="h-4 w-4" /> Generate Content for This Topic
-              </button>
+                <Brain className="h-4 w-4" /> Test in Simulation
+              </Link>
+              <Link
+                to="/dashboard/analysis"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+              >
+                View Analysis
+              </Link>
             </div>
           )}
         </div>
