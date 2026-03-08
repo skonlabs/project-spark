@@ -130,6 +130,9 @@ function MarkdownPreview({ content }: { content: string }) {
 }
 
 export default function GenerateContentPage() {
+  const [searchParams] = useSearchParams();
+  const topicFromUrl = searchParams.get("topic") ?? "";
+
   const [activeType, setActiveType] = useState<ContentType>("article");
   const [generatedContent, setGeneratedContent] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -139,11 +142,15 @@ export default function GenerateContentPage() {
   const [schedulePublish, setSchedulePublish] = useState(false);
   const [publishDate, setPublishDate] = useState("");
 
-  const [article, setArticle] = useState({ topic: "What is AI Observability?", product_name: "GAEO Platform", product_category: "AI Observability", target_audience: "ML engineers and data scientists", word_count: 1500 });
+  const [article, setArticle] = useState({ topic: topicFromUrl || "What is AI Observability?", product_name: "GAEO Platform", product_category: "AI Observability", target_audience: "ML engineers and data scientists", word_count: 1500 });
   const [comparison, setComparison] = useState({ product_name: "GAEO Platform", competitor_name: "Competitor X", product_category: "AI Observability", product_description: "AI Engine Optimization platform" });
   const [faq, setFaq] = useState({ product_name: "GAEO Platform", product_category: "AI Observability", product_description: "The leading AI Engine Optimization platform", num_questions: 15 });
   const [entityDef, setEntityDef] = useState({ product_name: "GAEO Platform", current_description: "GAEO helps companies optimize their AI visibility", product_category: "AI Engine Optimization" });
   const [optimize, setOptimize] = useState({ content: "", product_name: "GAEO Platform", product_category: "AI Engine Optimization" });
+
+  useEffect(() => {
+    if (topicFromUrl) setArticle((prev) => ({ ...prev, topic: topicFromUrl }));
+  }, [topicFromUrl]);
 
   function handleGenerate() {
     setIsLoading(true);

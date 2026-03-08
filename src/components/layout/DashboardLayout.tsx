@@ -195,11 +195,11 @@ export default function DashboardLayout() {
                                     </Link>
                                   );
                                 })}
-                                <button onClick={() => openIngest(product.id, folder.id, product.name, folder.name)}
+                                <Link to={`/dashboard/content?product=${product.id}&folder=${folder.id}`}
                                   className="flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] text-muted-foreground/20 hover:text-muted-foreground hover:bg-accent/20 transition-colors w-full mt-0.5"
                                 >
                                   <Plus className="h-2 w-2" /> Add
-                                </button>
+                                </Link>
                               </div>
                             )}
                           </div>
