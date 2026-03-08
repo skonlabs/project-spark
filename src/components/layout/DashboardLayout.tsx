@@ -70,7 +70,7 @@ export default function DashboardLayout() {
       const itemId = addContentItem({ productId: ingestTarget.productId, folderId: ingestTarget.folderId, title, url: ingestMethod === "url" ? ingestUrl : "#", source_type: ingestMethod === "url" ? "url" : "file" });
       setTimeout(() => { updateItemStatus(itemId, "analyzed", Math.floor(Math.random() * 35) + 35); }, 3000);
       setIngestLoading(false); setShowIngest(false);
-      toast.success(`"${title}" added to ${ingestTarget.folderName} — analysing now…`);
+      toast.success(`"${title}" added — analysing now…`);
       navigate(`/dashboard/content/${itemId}`);
     }, 1200);
   }
@@ -88,9 +88,9 @@ export default function DashboardLayout() {
   }
 
   const navLinks = [
-    { to: "/dashboard/content", icon: Upload, label: "Content Ingestion" },
+    { to: "/dashboard/content", icon: Upload, label: "Content" },
     { to: "/dashboard/prompts", icon: MessageSquare, label: "Prompts" },
-    { to: "/dashboard/analysis", icon: BarChart2, label: "Gap Analysis" },
+    { to: "/dashboard/analysis", icon: BarChart2, label: "Analysis" },
     { to: "/dashboard/competitive", icon: Swords, label: "Competitive" },
     { to: "/dashboard/settings", icon: Settings, label: "Settings" },
   ];
@@ -98,23 +98,23 @@ export default function DashboardLayout() {
   return (
     <div className="flex h-screen bg-background text-foreground overflow-hidden">
       {/* Sidebar */}
-      <aside className="w-64 flex-shrink-0 border-r border-border/60 bg-sidebar flex flex-col overflow-hidden">
+      <aside className="w-60 flex-shrink-0 border-r border-border/40 flex flex-col overflow-hidden" style={{ background: 'hsl(var(--sidebar-background))' }}>
         {/* Logo */}
-        <div className="h-16 flex items-center gap-2.5 px-4 border-b border-sidebar-border flex-shrink-0">
+        <div className="h-14 flex items-center gap-2.5 px-4 border-b border-border/30 flex-shrink-0">
           <Link to="/dashboard" className="flex items-center gap-2.5">
-            <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-md shadow-primary/20">
-              <span className="text-white font-black text-xs">G</span>
+            <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
+              <span className="text-white font-black text-[10px]">G</span>
             </div>
-            <span className="font-extrabold text-base tracking-tight">GAEO</span>
+            <span className="font-bold text-sm tracking-tight" style={{ fontFamily: "'Space Grotesk'" }}>GAEO</span>
           </Link>
         </div>
 
         {/* Explorer */}
         <div className="flex-1 overflow-y-auto py-3">
           <div className="px-4 py-1.5 flex items-center justify-between">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Explorer</span>
-            <button onClick={() => toast.success("Add product — coming soon!")} className="text-muted-foreground hover:text-foreground transition-colors" title="Add Product">
-              <Plus className="h-3.5 w-3.5" />
+            <span className="text-[9px] font-bold uppercase tracking-[0.15em] text-muted-foreground/70">Explorer</span>
+            <button onClick={() => toast.success("Add product — coming soon!")} className="text-muted-foreground/50 hover:text-foreground transition-colors">
+              <Plus className="h-3 w-3" />
             </button>
           </div>
 
@@ -126,13 +126,13 @@ export default function DashboardLayout() {
             return (
               <div key={product.id}>
                 <div className="flex items-center mx-1.5">
-                  <button onClick={() => toggleProduct(product.id)} className="p-1 text-muted-foreground hover:text-foreground flex-shrink-0">
-                    {isExpanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+                  <button onClick={() => toggleProduct(product.id)} className="p-1 text-muted-foreground/50 hover:text-foreground flex-shrink-0">
+                    {isExpanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
                   </button>
-                  <Link to="/dashboard" className="flex items-center gap-1.5 flex-1 px-1.5 py-1.5 rounded-lg hover:bg-sidebar-accent/60 transition-colors text-sm font-semibold truncate">
+                  <Link to="/dashboard" className="flex items-center gap-1.5 flex-1 px-1.5 py-1.5 rounded-lg hover:bg-accent/40 transition-colors text-sm font-semibold truncate">
                     <Package2 className="h-3.5 w-3.5 text-primary flex-shrink-0" />
                     <span className="truncate">{product.name}</span>
-                    <span className="ml-auto text-[10px] text-muted-foreground flex-shrink-0 tabular-nums">{analyzedCount}/{allItems.length}</span>
+                    <span className="ml-auto text-[9px] text-muted-foreground/60 flex-shrink-0 tabular-nums font-mono">{analyzedCount}/{allItems.length}</span>
                   </Link>
                 </div>
 
@@ -142,38 +142,38 @@ export default function DashboardLayout() {
                       const isFolderOpen = expandedFolders.has(folder.id);
                       return (
                         <div key={folder.id}>
-                          <button onClick={() => toggleFolder(folder.id)} className="flex items-center gap-1.5 w-full px-2 py-1 rounded-lg hover:bg-sidebar-accent/60 transition-colors text-sm text-left">
-                            {isFolderOpen ? <ChevronDown className="h-3 w-3 text-muted-foreground flex-shrink-0" /> : <ChevronRight className="h-3 w-3 text-muted-foreground flex-shrink-0" />}
-                            {isFolderOpen ? <FolderOpen className="h-3.5 w-3.5 text-yellow-500 flex-shrink-0" /> : <Folder className="h-3.5 w-3.5 text-yellow-500 flex-shrink-0" />}
-                            <span className="truncate text-sm">{folder.name}</span>
-                            <span className="ml-auto text-[10px] text-muted-foreground flex-shrink-0">{folder.items.length}</span>
+                          <button onClick={() => toggleFolder(folder.id)} className="flex items-center gap-1.5 w-full px-2 py-1 rounded-lg hover:bg-accent/40 transition-colors text-sm text-left">
+                            {isFolderOpen ? <ChevronDown className="h-2.5 w-2.5 text-muted-foreground/50 flex-shrink-0" /> : <ChevronRight className="h-2.5 w-2.5 text-muted-foreground/50 flex-shrink-0" />}
+                            {isFolderOpen ? <FolderOpen className="h-3 w-3 text-amber-500/70 flex-shrink-0" /> : <Folder className="h-3 w-3 text-amber-500/70 flex-shrink-0" />}
+                            <span className="truncate text-xs text-muted-foreground">{folder.name}</span>
+                            <span className="ml-auto text-[9px] text-muted-foreground/40 flex-shrink-0 font-mono">{folder.items.length}</span>
                           </button>
 
                           {isFolderOpen && (
-                            <div className="ml-5">
+                            <div className="ml-4">
                               {folder.items.map((item) => {
                                 const selected = isContentSelected(item.id);
                                 return (
                                   <Link key={item.id} to={`/dashboard/content/${item.id}`}
                                     className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs transition-all group ${
-                                      selected ? "bg-primary/15 text-primary font-semibold" : "text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/60"
+                                      selected ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground/70 hover:text-foreground hover:bg-accent/30"
                                     }`}
                                   >
-                                    <File className="h-3 w-3 flex-shrink-0" />
+                                    <File className="h-2.5 w-2.5 flex-shrink-0" />
                                     <span className="truncate flex-1">{item.title}</span>
                                     {item.status === "processing" ? (
-                                      <span className="text-[9px] text-yellow-400 flex-shrink-0 animate-pulse">●</span>
+                                      <span className="text-[8px] text-amber-400 flex-shrink-0 animate-pulse">●</span>
                                     ) : item.score !== null ? (
-                                      <span className={`text-[10px] font-bold flex-shrink-0 tabular-nums ${scoreColor(item.score)}`}>{item.score}</span>
+                                      <span className={`text-[9px] font-bold flex-shrink-0 tabular-nums font-mono ${scoreColor(item.score)}`}>{item.score}</span>
                                     ) : null}
                                   </Link>
                                 );
                               })}
                               <button onClick={() => openIngest(product.id, folder.id, product.name, folder.name)}
-                                className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/60 transition-colors w-full mt-0.5"
+                                className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] text-muted-foreground/40 hover:text-muted-foreground hover:bg-accent/30 transition-colors w-full mt-0.5"
                               >
-                                <Plus className="h-3 w-3 flex-shrink-0" />
-                                <span>Ingest content</span>
+                                <Plus className="h-2.5 w-2.5 flex-shrink-0" />
+                                <span>Add content</span>
                               </button>
                             </div>
                           )}
@@ -188,33 +188,33 @@ export default function DashboardLayout() {
         </div>
 
         {/* Footer nav */}
-        <div className="border-t border-sidebar-border py-2.5 px-2.5 space-y-0.5 flex-shrink-0">
+        <div className="border-t border-border/30 py-2 px-2 space-y-0.5 flex-shrink-0">
           {navLinks.map((link) => {
             const Icon = link.icon;
             const active = isRouteActive(link.to);
             return (
               <Link key={link.to} to={link.to}
-                className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm transition-all ${
-                  active ? "bg-primary/10 text-primary font-semibold" : "text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/60"
+                className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs transition-all ${
+                  active ? "bg-primary/10 text-primary font-semibold" : "text-muted-foreground/70 hover:text-foreground hover:bg-accent/40"
                 }`}
               >
-                <Icon className="h-4 w-4" />
+                <Icon className="h-3.5 w-3.5" />
                 {link.label}
               </Link>
             );
           })}
 
           {/* User */}
-          <div className="flex items-center gap-2.5 px-3 py-2.5 mt-2">
-            <div className="h-7 w-7 rounded-full bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center flex-shrink-0 border border-border/60">
-              <User className="h-3.5 w-3.5 text-primary" />
+          <div className="flex items-center gap-2 px-3 py-2.5 mt-1">
+            <div className="h-6 w-6 rounded-full bg-gradient-to-br from-violet-500/20 to-purple-500/10 flex items-center justify-center flex-shrink-0 border border-border/40">
+              <User className="h-3 w-3 text-primary" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold truncate">{user?.full_name || "User"}</p>
-              <p className="text-[10px] text-muted-foreground truncate">{user?.email}</p>
+              <p className="text-[11px] font-medium truncate">{user?.full_name || "User"}</p>
+              <p className="text-[9px] text-muted-foreground/50 truncate">{user?.email}</p>
             </div>
-            <button onClick={handleLogout} className="text-muted-foreground hover:text-foreground flex-shrink-0 transition-colors" title="Sign out">
-              <LogOut className="h-3.5 w-3.5" />
+            <button onClick={handleLogout} className="text-muted-foreground/40 hover:text-foreground flex-shrink-0 transition-colors" title="Sign out">
+              <LogOut className="h-3 w-3" />
             </button>
           </div>
         </div>
@@ -225,10 +225,10 @@ export default function DashboardLayout() {
         <AnimatePresence mode="wait">
           <motion.div
             key={location.pathname}
-            initial={{ opacity: 0, y: 8 }}
+            initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.25 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.2 }}
             className="min-h-full"
           >
             <Outlet />
@@ -239,41 +239,30 @@ export default function DashboardLayout() {
       {/* Ingest Modal */}
       <AnimatePresence>
         {showIngest && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-            onClick={() => setShowIngest(false)}
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowIngest(false)}
           >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="bg-card border border-border/60 rounded-2xl p-6 w-full max-w-md shadow-2xl gradient-border"
-              onClick={(e) => e.stopPropagation()}
+            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} transition={{ duration: 0.2 }}
+              className="bg-card border border-border/40 rounded-2xl p-6 w-full max-w-md shadow-2xl gradient-border" onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between mb-1">
-                <h2 className="font-bold flex items-center gap-2"><Upload className="h-4 w-4" /> Ingest Content</h2>
+                <h2 className="font-bold flex items-center gap-2 text-sm" style={{ fontFamily: "'Space Grotesk'" }}><Upload className="h-4 w-4" /> Ingest Content</h2>
                 <button onClick={() => setShowIngest(false)} className="text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>
               </div>
               {ingestTarget && (
                 <p className="text-xs text-muted-foreground mb-5">
-                  Adding to <span className="text-foreground font-semibold">{ingestTarget.productName}</span> → <span className="text-foreground font-semibold">{ingestTarget.folderName}</span>
+                  Adding to <span className="text-foreground font-medium">{ingestTarget.productName}</span> → <span className="text-foreground font-medium">{ingestTarget.folderName}</span>
                 </p>
               )}
 
               <div className="tab-bar mb-5">
                 {[
                   { id: "url", label: "URL", icon: Globe },
-                  { id: "file", label: "File Upload", icon: FileUp },
+                  { id: "file", label: "File", icon: FileUp },
                 ].map((m) => {
                   const Icon = m.icon;
                   return (
-                    <button key={m.id} onClick={() => setIngestMethod(m.id as IngestMethod)} data-active={ingestMethod === m.id ? "true" : "false"}
-                      className="flex-1 flex items-center justify-center gap-1.5"
-                    >
+                    <button key={m.id} onClick={() => setIngestMethod(m.id as IngestMethod)} data-active={ingestMethod === m.id ? "true" : "false"} className="flex-1 flex items-center justify-center gap-1.5">
                       <Icon className="h-3 w-3" /> {m.label}
                     </button>
                   );
@@ -283,31 +272,27 @@ export default function DashboardLayout() {
               {ingestMethod === "url" && (
                 <div className="space-y-3">
                   <div>
-                    <label className="text-xs font-semibold text-muted-foreground mb-1.5 block">Page URL</label>
-                    <input type="url" placeholder="https://example.com/blog/my-article" value={ingestUrl} onChange={(e) => setIngestUrl(e.target.value)}
-                      className="w-full rounded-xl border border-input bg-background/80 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring/50 transition-all"
-                      autoFocus onKeyDown={(e) => e.key === "Enter" && handleIngest()}
+                    <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Page URL</label>
+                    <input type="url" placeholder="https://example.com/blog/article" value={ingestUrl} onChange={(e) => setIngestUrl(e.target.value)}
+                      className="input-field" autoFocus onKeyDown={(e) => e.key === "Enter" && handleIngest()}
                     />
-                    <p className="text-[11px] text-muted-foreground mt-1.5">GAEO will fetch, parse, and analyze this page automatically.</p>
                   </div>
                 </div>
               )}
 
               {ingestMethod === "file" && (
-                <div className="border-2 border-dashed border-border/60 rounded-xl p-8 text-center hover:border-primary/30 transition-colors cursor-pointer">
-                  <FileUp className="h-8 w-8 text-muted-foreground/30 mx-auto mb-2" />
-                  <p className="text-sm font-medium">Drop files here or click to select</p>
-                  <p className="text-xs text-muted-foreground mt-1">PDF, DOCX, TXT, Markdown — up to 50MB</p>
+                <div className="border-2 border-dashed border-border/40 rounded-xl p-8 text-center hover:border-primary/30 transition-colors cursor-pointer">
+                  <FileUp className="h-8 w-8 text-muted-foreground/20 mx-auto mb-2" />
+                  <p className="text-sm font-medium">Drop files here</p>
+                  <p className="text-xs text-muted-foreground mt-1">PDF, DOCX, TXT, MD — up to 50MB</p>
                 </div>
               )}
 
               <div className="flex gap-2 mt-5">
-                <button onClick={handleIngest} disabled={(!ingestUrl && ingestMethod === "url") || ingestLoading}
-                  className="flex-1 rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 px-4 py-2.5 text-sm font-bold text-white hover:opacity-90 disabled:opacity-50 transition-all shadow-md shadow-primary/20"
-                >
+                <button onClick={handleIngest} disabled={(!ingestUrl && ingestMethod === "url") || ingestLoading} className="btn-primary flex-1 justify-center py-2.5 text-sm">
                   {ingestLoading ? "Ingesting..." : "Ingest & Analyze"}
                 </button>
-                <button onClick={() => setShowIngest(false)} className="rounded-xl border border-border px-4 py-2.5 text-sm hover:bg-accent transition-colors">Cancel</button>
+                <button onClick={() => setShowIngest(false)} className="rounded-xl border border-border/40 px-4 py-2.5 text-sm hover:bg-accent/50 transition-colors">Cancel</button>
               </div>
             </motion.div>
           </motion.div>
