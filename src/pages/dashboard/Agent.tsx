@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import {
   Bot,
   Brain,
@@ -14,6 +15,8 @@ import {
   ChevronRight,
   RefreshCw,
   AlertTriangle,
+  ArrowRight,
+  Zap,
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -28,78 +31,58 @@ interface AgentSuggestion {
   effort: "low" | "medium" | "high";
   status: "pending" | "in_progress" | "completed";
   created_at: string;
+  action_href?: string; // link to relevant page
 }
 
 const DEMO_SUGGESTIONS: AgentSuggestion[] = [
   {
-    id: "1",
-    type: "content",
+    id: "1", type: "content",
     title: "Create 'Best AI Observability Tools 2026' comparison article",
     description: "This high-volume query appears in 87% of monitored prompts but you have zero coverage. Competitors LangSmith and Arize AI rank #1 and #2. Creating a comprehensive comparison article could move you into the top 5 within 30 days.",
-    impact: "high",
-    effort: "medium",
-    status: "pending",
-    created_at: "2026-03-08T09:00:00Z",
+    impact: "high", effort: "medium", status: "pending", created_at: "2026-03-08T09:00:00Z",
+    action_href: "/dashboard/content/generate?topic=Best+AI+Observability+Tools+2026",
   },
   {
-    id: "2",
-    type: "optimization",
+    id: "2", type: "optimization",
     title: "Improve entity definition clarity on your homepage",
     description: "Your homepage does not clearly state what GAEO Platform does within the first 2 sentences. LLMs scan the first 150 words to classify products. Adding 'GAEO Platform is the leading AI Engine Optimization platform' as the opening sentence is projected to increase entity clarity score from 65 → 82.",
-    impact: "high",
-    effort: "low",
-    status: "pending",
-    created_at: "2026-03-08T09:05:00Z",
+    impact: "high", effort: "low", status: "pending", created_at: "2026-03-08T09:05:00Z",
+    action_href: "/dashboard/content/c6", // homepage content item
   },
   {
-    id: "3",
-    type: "competitive",
+    id: "3", type: "competitive",
     title: "LangSmith is now dominating 'LLM monitoring' prompts",
     description: "LangSmith's share of voice increased from 54% to 71% in the last 7 days on 'how to monitor LLM applications' prompts. They published 3 new educational articles. Recommend publishing 2 counter-articles within 14 days.",
-    impact: "high",
-    effort: "high",
-    status: "in_progress",
-    created_at: "2026-03-07T14:00:00Z",
+    impact: "high", effort: "high", status: "in_progress", created_at: "2026-03-07T14:00:00Z",
+    action_href: "/dashboard/competitive",
   },
   {
-    id: "4",
-    type: "content",
+    id: "4", type: "content",
     title: "Add FAQ section to product documentation",
     description: "FAQ-style content is cited 3.2x more often by LLMs than long-form prose. Your documentation lacks FAQ sections. Adding FAQs to your top 5 pages is projected to increase prompt coverage score from 28 → 45.",
-    impact: "medium",
-    effort: "low",
-    status: "pending",
-    created_at: "2026-03-07T10:00:00Z",
+    impact: "medium", effort: "low", status: "pending", created_at: "2026-03-07T10:00:00Z",
+    action_href: "/dashboard/content/c4", // getting started guide
   },
   {
-    id: "5",
-    type: "monitoring",
+    id: "5", type: "monitoring",
     title: "Add Grok 2 to monitoring jobs",
     description: "Grok 2 is growing rapidly as an AI discovery surface, especially for developer and B2B queries. Your current monitoring does not include Grok. Adding it will give you full coverage across all 5 major LLMs.",
-    impact: "medium",
-    effort: "low",
-    status: "completed",
-    created_at: "2026-03-06T09:00:00Z",
+    impact: "medium", effort: "low", status: "completed", created_at: "2026-03-06T09:00:00Z",
+    action_href: "/dashboard/monitoring",
   },
   {
-    id: "6",
-    type: "content",
+    id: "6", type: "content",
     title: "Publish 'AI Observability vs Traditional Monitoring' article",
     description: "This comparison query ranks in the top 10 most frequent AI search prompts in your category. Your competitors cover it but you don't. The article should explain when to use specialized AI observability tools vs general APM solutions.",
-    impact: "medium",
-    effort: "medium",
-    status: "pending",
-    created_at: "2026-03-06T08:00:00Z",
+    impact: "medium", effort: "medium", status: "pending", created_at: "2026-03-06T08:00:00Z",
+    action_href: "/dashboard/content/generate?topic=AI+Observability+vs+Traditional+Monitoring",
   },
   {
-    id: "7",
-    type: "optimization",
+    id: "7", type: "optimization",
     title: "Standardize product category labels across all content",
     description: "Inconsistency detected: your content uses 'AI observability', 'LLM monitoring', 'AI monitoring', and 'ML observability' interchangeably. LLMs reward category consistency. Standardizing to 'AI observability' would improve consistency score from 72 → 90.",
-    impact: "medium",
-    effort: "medium",
-    status: "pending",
-    created_at: "2026-03-05T12:00:00Z",
+    impact: "medium", effort: "medium", status: "pending", created_at: "2026-03-05T12:00:00Z",
+    action_href: "/dashboard/analysis",
   },
 ];
 
@@ -110,17 +93,8 @@ const typeConfig: Record<SuggestionType, { icon: React.ReactNode; label: string;
   monitoring: { icon: <Brain className="h-4 w-4" />, label: "Monitoring", color: "text-purple-400 bg-purple-500/10" },
 };
 
-const impactColor: Record<string, string> = {
-  high: "text-red-400",
-  medium: "text-yellow-400",
-  low: "text-green-400",
-};
-
-const effortColor: Record<string, string> = {
-  low: "text-green-400",
-  medium: "text-yellow-400",
-  high: "text-red-400",
-};
+const impactColor: Record<string, string> = { high: "text-red-400", medium: "text-yellow-400", low: "text-green-400" };
+const effortColor: Record<string, string> = { low: "text-green-400", medium: "text-yellow-400", high: "text-red-400" };
 
 const AGENT_STATS = [
   { label: "Suggestions Generated", value: "47", sub: "last 30 days", icon: <Lightbulb className="h-4 w-4" /> },
@@ -135,6 +109,7 @@ export default function AgentPage() {
   const [filter, setFilter] = useState<"all" | SuggestionType>("all");
   const [expandedId, setExpandedId] = useState<string | null>("1");
   const [agentEnabled, setAgentEnabled] = useState(true);
+  const navigate = useNavigate();
 
   const filtered = suggestions.filter((s) => filter === "all" || s.type === filter);
   const pending = suggestions.filter((s) => s.status === "pending").length;
@@ -278,7 +253,7 @@ export default function AgentPage() {
                 <div className="px-5 pb-5 pt-0 border-t border-border mt-0 space-y-4">
                   <p className="text-sm text-muted-foreground leading-relaxed pt-4">{suggestion.description}</p>
                   {suggestion.status !== "completed" && (
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       {suggestion.status === "pending" && (
                         <>
                           <button
@@ -287,21 +262,34 @@ export default function AgentPage() {
                           >
                             <Play className="h-3 w-3" /> Start Working
                           </button>
-                          <button
-                            onClick={() => toast.success("Generating content...")}
-                            className="rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground flex items-center gap-1"
-                          >
-                            <Sparkles className="h-3 w-3" /> Auto-Generate Content
-                          </button>
+                          {suggestion.action_href && (
+                            <Link
+                              to={suggestion.action_href}
+                              className="rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground flex items-center gap-1 hover:bg-primary/90 transition-colors"
+                            >
+                              <Sparkles className="h-3 w-3" /> Take Action
+                              <ArrowRight className="h-2.5 w-2.5" />
+                            </Link>
+                          )}
                         </>
                       )}
                       {suggestion.status === "in_progress" && (
-                        <button
-                          onClick={() => markComplete(suggestion.id)}
-                          className="rounded-lg bg-green-600 px-3 py-1.5 text-xs font-medium text-white flex items-center gap-1"
-                        >
-                          <CheckCircle2 className="h-3 w-3" /> Mark Complete
-                        </button>
+                        <>
+                          <button
+                            onClick={() => markComplete(suggestion.id)}
+                            className="rounded-lg bg-green-600 px-3 py-1.5 text-xs font-medium text-white flex items-center gap-1"
+                          >
+                            <CheckCircle2 className="h-3 w-3" /> Mark Complete
+                          </button>
+                          {suggestion.action_href && (
+                            <Link
+                              to={suggestion.action_href}
+                              className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent flex items-center gap-1 transition-colors"
+                            >
+                              <ArrowRight className="h-3 w-3" /> View Related
+                            </Link>
+                          )}
+                        </>
                       )}
                       <span className="text-xs text-muted-foreground ml-auto">
                         {new Date(suggestion.created_at).toLocaleDateString("en", { month: "short", day: "numeric" })}

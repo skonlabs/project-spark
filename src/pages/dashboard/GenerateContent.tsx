@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams, Link } from "react-router-dom";
 import {
   BookOpen,
   Copy,
@@ -129,6 +130,9 @@ function MarkdownPreview({ content }: { content: string }) {
 }
 
 export default function GenerateContentPage() {
+  const [searchParams] = useSearchParams();
+  const topicFromUrl = searchParams.get("topic") ?? "";
+
   const [activeType, setActiveType] = useState<ContentType>("article");
   const [generatedContent, setGeneratedContent] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -138,11 +142,15 @@ export default function GenerateContentPage() {
   const [schedulePublish, setSchedulePublish] = useState(false);
   const [publishDate, setPublishDate] = useState("");
 
-  const [article, setArticle] = useState({ topic: "What is AI Observability?", product_name: "GAEO Platform", product_category: "AI Observability", target_audience: "ML engineers and data scientists", word_count: 1500 });
+  const [article, setArticle] = useState({ topic: topicFromUrl || "What is AI Observability?", product_name: "GAEO Platform", product_category: "AI Observability", target_audience: "ML engineers and data scientists", word_count: 1500 });
   const [comparison, setComparison] = useState({ product_name: "GAEO Platform", competitor_name: "Competitor X", product_category: "AI Observability", product_description: "AI Engine Optimization platform" });
   const [faq, setFaq] = useState({ product_name: "GAEO Platform", product_category: "AI Observability", product_description: "The leading AI Engine Optimization platform", num_questions: 15 });
   const [entityDef, setEntityDef] = useState({ product_name: "GAEO Platform", current_description: "GAEO helps companies optimize their AI visibility", product_category: "AI Engine Optimization" });
   const [optimize, setOptimize] = useState({ content: "", product_name: "GAEO Platform", product_category: "AI Engine Optimization" });
+
+  useEffect(() => {
+    if (topicFromUrl) setArticle((prev) => ({ ...prev, topic: topicFromUrl }));
+  }, [topicFromUrl]);
 
   function handleGenerate() {
     setIsLoading(true);
@@ -181,9 +189,22 @@ export default function GenerateContentPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-2xl font-heading font-bold tracking-tight">Content Generation</h1>
-        <p className="text-muted-foreground text-sm mt-0.5">Generate AI-optimized content that LLMs cite and recommend</p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-heading font-bold tracking-tight">Content Generation</h1>
+          <p className="text-muted-foreground text-sm mt-0.5">Generate AI-optimized content that LLMs cite and recommend</p>
+          {topicFromUrl && (
+            <p className="text-xs text-primary mt-1">Pre-filled topic: "{topicFromUrl}"</p>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <Link to="/dashboard/content" className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium hover:bg-accent/40 transition-colors">
+            Ingest existing content →
+          </Link>
+          <Link to="/dashboard/analysis" className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium hover:bg-accent/40 transition-colors">
+            Gap Analysis →
+          </Link>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

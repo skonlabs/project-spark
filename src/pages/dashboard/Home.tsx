@@ -1,12 +1,10 @@
-import { useState } from "react";
 import { Link } from "react-router-dom";
 import {
   AlertTriangle, ArrowRight, ArrowUpRight, BarChart3, Brain, CheckCircle2,
   ChevronRight, Clock, File, FileText, Folder, Monitor, Package2, Plus,
-  Sparkles, Swords, Upload, X, Zap,
+  Sparkles, Swords, Upload, Zap,
 } from "lucide-react";
 import { motion } from "framer-motion";
-import toast from "react-hot-toast";
 import { MOCK_PRODUCTS, getAllContent, getProductStats, CONTENT_ANALYSIS } from "@/data/products";
 import { ScoreRing } from "@/components/dashboard/ScoreRing";
 
@@ -28,11 +26,6 @@ function RelativeTime({ iso }: { iso: string }) {
 }
 
 export default function HomePage() {
-  const [showQuickIngest, setShowQuickIngest] = useState(false);
-  const [ingestUrl, setIngestUrl] = useState("");
-  const [selectedProduct, setSelectedProduct] = useState(MOCK_PRODUCTS[0].id);
-  const [selectedFolder, setSelectedFolder] = useState(MOCK_PRODUCTS[0].folders[0].id);
-
   const recentContent = getAllContent()
     .filter((c) => c.item.status === "analyzed")
     .sort((a, b) => new Date(b.item.ingested_at).getTime() - new Date(a.item.ingested_at).getTime())
@@ -44,15 +37,6 @@ export default function HomePage() {
     return a?.gaps.some((g) => g.severity === "critical");
   });
 
-  function handleIngest() {
-    if (!ingestUrl) return;
-    toast.success("Content ingested — analysis will complete shortly.");
-    setIngestUrl(""); setShowQuickIngest(false);
-  }
-
-  const product = MOCK_PRODUCTS.find((p) => p.id === selectedProduct);
-
-  // Aggregate stats
   const totalContent = allContent.length;
   const analyzedContent = allContent.filter(c => c.item.status === "analyzed").length;
   const avgScore = Math.round(allContent.filter(c => c.item.score !== null).reduce((sum, c) => sum + (c.item.score ?? 0), 0) / Math.max(1, allContent.filter(c => c.item.score !== null).length));
@@ -65,33 +49,33 @@ export default function HomePage() {
           <h1 className="text-2xl font-heading font-bold tracking-tight">Dashboard</h1>
           <p className="text-muted-foreground text-sm mt-0.5">Your AI Engine Optimization command center</p>
         </div>
-        <button onClick={() => setShowQuickIngest(true)} className="btn-primary text-xs px-4 py-2">
+        <Link to="/dashboard/content" className="btn-primary text-xs px-4 py-2">
           <Upload className="h-3.5 w-3.5" /> Ingest Content
-        </button>
+        </Link>
       </motion.div>
 
       {/* KPI cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          { label: "AI Visibility Score", value: String(avgScore), suffix: "/100", change: "+3 this week", positive: true, icon: BarChart3 },
-          { label: "LLM Mention Rate", value: "18", suffix: "%", change: "-2% vs last week", positive: false, icon: Brain },
-          { label: "Content Assets", value: String(totalContent), suffix: ` (${analyzedContent} analyzed)`, change: "+12 this month", positive: true, icon: FileText },
-          { label: "Critical Issues", value: String(criticalItems.length), suffix: " items", change: "Needs attention", positive: false, icon: Monitor },
+          { label: "AI Visibility Score", value: String(avgScore), suffix: "/100", change: "+3 this week", positive: true, icon: BarChart3, href: "/dashboard/analysis" },
+          { label: "LLM Mention Rate", value: "18", suffix: "%", change: "-2% vs last week", positive: false, icon: Brain, href: "/dashboard/simulation" },
+          { label: "Content Assets", value: String(totalContent), suffix: ` (${analyzedContent} analyzed)`, change: "+12 this month", positive: true, icon: FileText, href: "/dashboard/content" },
+          { label: "Critical Issues", value: String(criticalItems.length), suffix: " items", change: "Needs attention", positive: false, icon: Monitor, href: "/dashboard/monitoring" },
         ].map((stat, i) => {
           const Icon = stat.icon;
           return (
-            <motion.div key={stat.label} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
-              className="stat-card"
-            >
-              <div className="flex items-center justify-between mb-3">
-                <Icon className="h-4 w-4 text-muted-foreground/50" />
-                <span className={`text-[10px] font-medium ${stat.positive ? "text-emerald-400" : "text-red-400"}`}>{stat.change}</span>
-              </div>
-              <div className="flex items-baseline gap-1">
-                <span className="text-2xl font-heading font-extrabold tabular-nums">{stat.value}</span>
-                <span className="text-xs text-muted-foreground">{stat.suffix}</span>
-              </div>
-              <p className="text-[11px] text-muted-foreground mt-1">{stat.label}</p>
+            <motion.div key={stat.label} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
+              <Link to={stat.href} className="stat-card block hover:border-primary/20 transition-colors">
+                <div className="flex items-center justify-between mb-3">
+                  <Icon className="h-4 w-4 text-muted-foreground/50" />
+                  <span className={`text-[10px] font-medium ${stat.positive ? "text-emerald-400" : "text-red-400"}`}>{stat.change}</span>
+                </div>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-2xl font-heading font-extrabold tabular-nums">{stat.value}</span>
+                  <span className="text-xs text-muted-foreground">{stat.suffix}</span>
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-1">{stat.label}</p>
+              </Link>
             </motion.div>
           );
         })}
@@ -115,12 +99,13 @@ export default function HomePage() {
         <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.15 }}
           className="lg:col-span-2 space-y-3"
         >
-          {/* Quick actions */}
+          {/* Quick actions — each links to the relevant feature */}
           {[
             { title: "Run LLM Simulation", description: "Test how AI models respond to queries about your product", icon: Brain, href: "/dashboard/simulation", cta: "Run simulation" },
             { title: "Analyze Competitors", description: "See your share of voice vs competitors across AI engines", icon: Swords, href: "/dashboard/competitive", cta: "View competitive" },
             { title: "Generate Content", description: "Create AI-optimized articles, FAQs, and comparisons", icon: Zap, href: "/dashboard/content/generate", cta: "Generate" },
-          ].map((action, i) => {
+            { title: "Discover Prompts", description: "Find prompts users ask AI about your category", icon: Sparkles, href: "/dashboard/prompts", cta: "View prompts" },
+          ].map((action) => {
             const Icon = action.icon;
             return (
               <Link key={action.title} to={action.href} className="bento-card flex items-center gap-4 group">
@@ -176,19 +161,22 @@ export default function HomePage() {
                 <div className="flex items-center gap-4 text-[10px] text-muted-foreground border-t border-border pt-3">
                   <span className="flex items-center gap-1"><CheckCircle2 className="h-3 w-3 text-emerald-400" />{stats.analyzed}/{stats.total}</span>
                   {criticalCount > 0 && <span className="flex items-center gap-1 text-red-400"><AlertTriangle className="h-3 w-3" />{criticalCount} critical</span>}
-                  <a href={`https://${product.url}`} target="_blank" rel="noreferrer" className="ml-auto hover:text-foreground font-mono text-muted-foreground/40">{product.url}</a>
+                  <Link to="/dashboard/content" className="ml-auto text-primary hover:underline">
+                    Ingest content →
+                  </Link>
                 </div>
               </motion.div>
             );
           })}
 
-          <motion.button initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-            onClick={() => toast.success("Create product — coming soon!")}
-            className="rounded-xl border-2 border-dashed border-border/30 p-5 flex flex-col items-center justify-center gap-2 text-muted-foreground/30 hover:text-muted-foreground hover:border-primary/20 hover:bg-primary/[0.02] transition-all min-h-[160px]"
-          >
-            <Plus className="h-6 w-6" />
-            <p className="text-xs font-medium">Add Product</p>
-          </motion.button>
+          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+            <Link to="/dashboard/projects"
+              className="rounded-xl border-2 border-dashed border-border/30 p-5 flex flex-col items-center justify-center gap-2 text-muted-foreground/30 hover:text-muted-foreground hover:border-primary/20 hover:bg-primary/[0.02] transition-all min-h-[160px]"
+            >
+              <Plus className="h-6 w-6" />
+              <p className="text-xs font-medium">Add Product</p>
+            </Link>
+          </motion.div>
         </div>
       </div>
 
@@ -200,6 +188,7 @@ export default function HomePage() {
               <AlertTriangle className="h-3.5 w-3.5 text-red-400" /> Needs Attention
               <span className="text-[10px] bg-red-500/10 text-red-400 px-2 py-0.5 rounded-full font-bold border border-red-500/15">{criticalItems.length}</span>
             </h2>
+            <Link to="/dashboard/analysis" className="text-xs text-primary hover:underline font-medium">View analysis</Link>
           </div>
           <div className="divide-y divide-border/40">
             {criticalItems.slice(0, 4).map(({ product, folder, item }) => (
@@ -239,42 +228,6 @@ export default function HomePage() {
           ))}
         </div>
       </motion.div>
-
-      {/* Quick Ingest Modal */}
-      {showQuickIngest && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowQuickIngest(false)}>
-          <motion.div initial={{ scale: 0.97, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-            className="bg-card border border-border rounded-xl p-6 w-full max-w-md shadow-2xl" onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between mb-5">
-              <h2 className="font-heading font-bold text-sm flex items-center gap-2"><Upload className="h-4 w-4" /> Ingest Content</h2>
-              <button onClick={() => setShowQuickIngest(false)}><X className="h-4 w-4 text-muted-foreground hover:text-foreground" /></button>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Product</label>
-                <select value={selectedProduct} onChange={(e) => { setSelectedProduct(e.target.value); const p = MOCK_PRODUCTS.find((p) => p.id === e.target.value); if (p) setSelectedFolder(p.folders[0].id); }} className="input-field">
-                  {MOCK_PRODUCTS.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Folder</label>
-                <select value={selectedFolder} onChange={(e) => setSelectedFolder(e.target.value)} className="input-field">
-                  {(product?.folders ?? []).map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Page URL</label>
-                <input type="url" placeholder="https://example.com/blog/my-article" value={ingestUrl} onChange={(e) => setIngestUrl(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleIngest()} className="input-field" autoFocus />
-              </div>
-            </div>
-            <div className="flex gap-2 mt-5">
-              <button onClick={handleIngest} disabled={!ingestUrl} className="btn-primary flex-1 justify-center py-2.5 text-sm">Ingest & Analyze</button>
-              <button onClick={() => setShowQuickIngest(false)} className="btn-secondary px-4 py-2.5 text-sm">Cancel</button>
-            </div>
-          </motion.div>
-        </div>
-      )}
     </div>
   );
 }
