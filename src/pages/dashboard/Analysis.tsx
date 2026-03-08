@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   AlertCircle,
   ArrowRight,
@@ -15,6 +15,7 @@ import toast from "react-hot-toast";
 import { ScoreRing } from "@/components/dashboard/ScoreRing";
 import { ScoreBar } from "@/components/dashboard/ScoreBar";
 import { getProductPrompts } from "@/data/products";
+import { useContent } from "@/contexts/ContentContext";
 import type { AnalysisReport } from "@/types";
 
 const PRODUCT_ID = "product-gaeo";
@@ -109,6 +110,13 @@ export default function AnalysisPage() {
   const [activeTab, setActiveTab] = useState<"score" | "recommendations" | "gaps" | "roadmap">("score");
   const [running, setRunning] = useState(false);
   const navigate = useNavigate();
+  const { products } = useContent();
+  const [selectedProductId, setSelectedProductId] = useState(() => products[0]?.id ?? PRODUCT_ID);
+
+  const selectedProduct = useMemo(
+    () => products.find((p) => p.id === selectedProductId) ?? products[0],
+    [products, selectedProductId]
+  );
 
   const report = DEMO_REPORT;
 
@@ -122,7 +130,7 @@ export default function AnalysisPage() {
   }
 
   function handleGenerateContent(title: string) {
-    navigate("/dashboard/content/generate");
+    navigate("/dashboard/content");
     toast.success(`Opening content generator for: "${title}"`);
   }
 
@@ -132,26 +140,63 @@ export default function AnalysisPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold">AI Visibility Analysis</h1>
-          <p className="text-muted-foreground text-sm mt-0.5">Comprehensive analysis of your AI discoverability signals</p>
+          <h1 className="text-2xl font-bold">Gap Analysis</h1>
+          <p className="text-muted-foreground text-sm mt-0.5">
+            AI visibility gaps and coverage for a specific product
+          </p>
         </div>
-        <button
-          onClick={handleRun}
-          disabled={running}
-          className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60 transition-colors"
-        >
-          {running ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
-          {running ? "Analyzing..." : "Re-analyze"}
-        </button>
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Product selector */}
+          <div className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2">
+            <span className="text-xs text-muted-foreground font-medium">Product:</span>
+            <select
+              value={selectedProductId}
+              onChange={(e) => setSelectedProductId(e.target.value)}
+              className="bg-transparent text-sm font-medium focus:outline-none cursor-pointer"
+            >
+              {products.map((p) => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+          </div>
+          <button
+            onClick={handleRun}
+            disabled={running}
+            className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60 transition-colors"
+          >
+            {running ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+            {running ? "Analyzing..." : "Re-analyze"}
+          </button>
+        </div>
       </div>
+
+      {/* Product context banner */}
+      {selectedProduct && (
+        <div className="rounded-xl border border-border bg-card px-4 py-3 flex items-center gap-3">
+          <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+            <span className="text-xs font-bold text-primary">{selectedProduct.name.slice(0, 2).toUpperCase()}</span>
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold truncate">{selectedProduct.name}</p>
+            <p className="text-xs text-muted-foreground truncate">{selectedProduct.description}</p>
+          </div>
+          <div className="ml-auto flex-shrink-0 text-right">
+            <p className="text-xs text-muted-foreground">Content items</p>
+            <p className="text-sm font-bold">
+              {selectedProduct.folders.reduce((sum, f) => sum + f.items.length, 0)}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Score overview — always visible */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="rounded-xl border border-border bg-card p-6 flex flex-col items-center">
           <ScoreRing score={OVERALL_SCORE} size={200} />
-          <div className="mt-4 w-full space-y-1 text-sm">
+          <p className="text-xs text-muted-foreground mt-2 text-center">AI Visibility Score for {selectedProduct?.name}</p>
+          <div className="mt-3 w-full space-y-1 text-sm">
             <div className="flex justify-between text-muted-foreground">
               <span>Industry Average</span>
               <span className="font-medium text-foreground">51 / 100</span>
@@ -161,7 +206,7 @@ export default function AnalysisPage() {
               <span className="font-medium text-green-400">78 / 100</span>
             </div>
             <div className="flex justify-between text-muted-foreground">
-              <span>Your Score</span>
+              <span>{selectedProduct?.name ?? "Your Score"}</span>
               <span className="font-medium text-orange-400">{OVERALL_SCORE} / 100</span>
             </div>
           </div>
@@ -285,7 +330,7 @@ export default function AnalysisPage() {
 
       {/* Content Gaps */}
       {activeTab === "gaps" && (() => {
-        const allPrompts = getProductPrompts(PRODUCT_ID);
+        const allPrompts = getProductPrompts(selectedProductId);
         const coveredPrompts = allPrompts.filter((p) => p.covered);
         const gapPrompts = allPrompts.filter((p) => !p.covered);
         const coveragePct = allPrompts.length > 0 ? Math.round((coveredPrompts.length / allPrompts.length) * 100) : 0;
@@ -350,7 +395,7 @@ export default function AnalysisPage() {
                             <p className="text-xs text-muted-foreground mt-0.5">{INTENT_LABELS[p.intent] ?? p.intent}</p>
                           </div>
                           <button
-                            onClick={() => { navigate("/dashboard/content/generate"); toast.success(`Opening content generator for: "${p.text}"`); }}
+                            onClick={() => { navigate("/dashboard/content"); toast.success(`Opening content generator for: "${p.text}"`); }}
                             className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors flex-shrink-0"
                           >
                             <Sparkles className="h-3 w-3" /> Create Content
