@@ -198,7 +198,7 @@ export default function PromptsPage() {
 
       {tab === "simulate" && (
         <div className="bento-card space-y-5">
-          <h2 className="font-bold text-sm" style={{ fontFamily: "'Space Grotesk'" }}>Quick Prompt Simulation</h2>
+          <h2 className="font-heading font-bold text-sm">Quick Prompt Simulation</h2>
           <p className="text-xs text-muted-foreground">Test a prompt across all major LLMs to see how your product ranks.</p>
           <div className="flex gap-2">
             <div className="relative flex-1">

@@ -142,7 +142,7 @@ export default function AnalysisPage() {
     <div className="p-6 space-y-6">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold">Gap Analysis</h1>
+          <h1 className="text-2xl font-heading font-bold tracking-tight">Gap Analysis</h1>
           <p className="text-muted-foreground text-sm mt-0.5">
             AI visibility gaps and coverage for a specific product
           </p>
