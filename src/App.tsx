@@ -5,6 +5,7 @@ import Landing from "./pages/Landing";
 import LoginPage from "./pages/auth/Login";
 import RegisterPage from "./pages/auth/Register";
 import DashboardLayout from "./components/layout/DashboardLayout";
+import { ContentProvider } from "./contexts/ContentContext";
 import HomePage from "./pages/dashboard/Home";
 import ContentPage from "./pages/dashboard/Content";
 import ContentDetailPage from "./pages/dashboard/ContentDetail";
@@ -43,7 +44,7 @@ const App = () => (
         <Route path="/" element={<Landing />} />
         <Route path="/auth/login" element={<LoginPage />} />
         <Route path="/auth/register" element={<RegisterPage />} />
-        <Route path="/dashboard" element={<DashboardLayout />}>
+        <Route path="/dashboard" element={<ContentProvider><DashboardLayout /></ContentProvider>}>
           <Route index element={<HomePage />} />
           <Route path="content" element={<ContentPage />} />
           <Route path="content/:contentId" element={<ContentDetailPage />} />

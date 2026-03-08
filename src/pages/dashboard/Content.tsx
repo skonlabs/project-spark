@@ -1,30 +1,19 @@
 import { useState } from "react";
 import { useDropzone } from "react-dropzone";
+import { useNavigate } from "react-router-dom";
 import {
-  FileText,
-  Globe,
-  Loader2,
-  Plus,
-  Upload,
-  Link as LinkIcon,
-  CheckCircle2,
-  Clock,
-  AlertCircle,
-  Github,
-  Database,
-  Cloud,
-  BookOpen,
-  Code2,
-  Zap,
+  FileText, Globe, Loader2, Upload, Link as LinkIcon,
+  CheckCircle2, Clock, AlertCircle, Github, Database,
+  Cloud, BookOpen, Code2, Zap, ExternalLink,
 } from "lucide-react";
 import toast from "react-hot-toast";
-import type { ContentAsset } from "@/types";
+import { useContent } from "@/contexts/ContentContext";
 
 const statusIcon: Record<string, React.ReactNode> = {
-  completed: <CheckCircle2 className="h-4 w-4 text-green-400" />,
+  analyzed: <CheckCircle2 className="h-4 w-4 text-green-400" />,
   pending: <Clock className="h-4 w-4 text-yellow-400 animate-pulse" />,
   processing: <Loader2 className="h-4 w-4 text-blue-400 animate-spin" />,
-  failed: <AlertCircle className="h-4 w-4 text-red-400" />,
+  error: <AlertCircle className="h-4 w-4 text-red-400" />,
 };
 
 type IngestTab = "upload" | "url" | "crawl" | "git" | "cloud" | "cms" | "api";
@@ -50,7 +39,20 @@ const GIT_OPTIONS = [
   { id: "bitbucket", name: "Bitbucket", placeholder: "https://bitbucket.org/owner/repo" },
 ];
 
+function titleFromUrl(url: string): string {
+  try {
+    const u = new URL(url.startsWith("http") ? url : `https://${url}`);
+    const slug = u.pathname.split("/").filter(Boolean).pop() ?? u.hostname;
+    return slug.replace(/[-_]/g, " ").replace(/\.\w+$/, "").replace(/\b\w/g, (c) => c.toUpperCase()) || u.hostname;
+  } catch {
+    return url.split("/").filter(Boolean).pop() ?? "Untitled";
+  }
+}
+
 export default function ContentPage() {
+  const navigate = useNavigate();
+  const { products, addContentItem, updateItemStatus } = useContent();
+
   const [activeTab, setActiveTab] = useState<IngestTab>("upload");
   const [urlInput, setUrlInput] = useState("");
   const [crawlUrl, setCrawlUrl] = useState("");
@@ -63,6 +65,18 @@ export default function ContentPage() {
   const [cmsApiKey, setCmsApiKey] = useState("");
   const [apiEndpoint, setApiEndpoint] = useState("");
   const [apiKey, setApiKey] = useState("");
+
+  const defaultProduct = products[0];
+  const [selectedProductId, setSelectedProductId] = useState(defaultProduct?.id ?? "");
+  const selectedProduct = products.find((p) => p.id === selectedProductId) ?? products[0];
+  const [selectedFolderId, setSelectedFolderId] = useState(selectedProduct?.folders[0]?.id ?? "");
+  const selectedFolder = selectedProduct?.folders.find((f) => f.id === selectedFolderId) ?? selectedProduct?.folders[0];
+
+  const allItems = products.flatMap((p) =>
+    p.folders.flatMap((f) =>
+      f.items.map((item) => ({ ...item, productName: p.name, folderName: f.name }))
+    )
+  );
 
   const { getRootProps, getInputProps, isDragActive, acceptedFiles } = useDropzone({
     accept: {
@@ -77,15 +91,32 @@ export default function ContentPage() {
     maxSize: 50 * 1024 * 1024,
   });
 
-  const demoAssets: ContentAsset[] = [
-    { id: "1", project_id: "demo", title: "Product Overview", source_url: null, source_type: "file_upload", file_type: "pdf", status: "completed", word_count: 1250, tags: [], created_at: "2026-03-07T10:00:00Z" },
-    { id: "2", project_id: "demo", title: "Getting Started Guide", source_url: "https://docs.example.com/getting-started", source_type: "url", file_type: "html", status: "completed", word_count: 2100, tags: [], created_at: "2026-03-07T11:00:00Z" },
-    { id: "3", project_id: "demo", title: "API Reference", source_url: null, source_type: "github", file_type: null, status: "completed", word_count: 4500, tags: [], created_at: "2026-03-07T12:00:00Z" },
-    { id: "4", project_id: "demo", title: "Blog: Why AI Observability Matters", source_url: "https://blog.example.com", source_type: "crawl", file_type: "html", status: "processing", word_count: null, tags: [], created_at: "2026-03-08T09:00:00Z" },
-    { id: "5", project_id: "demo", title: "Architecture Document.docx", source_url: null, source_type: "file_upload", file_type: "docx", status: "failed", word_count: null, tags: [], created_at: "2026-03-08T08:00:00Z" },
-    { id: "6", project_id: "demo", title: "Notion: Product Roadmap", source_url: "https://notion.so/...", source_type: "notion", file_type: null, status: "completed", word_count: 890, tags: [], created_at: "2026-03-06T14:00:00Z" },
-    { id: "7", project_id: "demo", title: "data-export.csv", source_url: null, source_type: "file_upload", file_type: "csv", status: "completed", word_count: 320, tags: [], created_at: "2026-03-05T10:00:00Z" },
-  ];
+  const selectedGitOption = GIT_OPTIONS.find((g) => g.id === gitPlatform)!;
+
+  function ingest(
+    title: string,
+    url: string,
+    sourceType: "url" | "file" | "crawl" | "api" | "cms",
+  ) {
+    if (!selectedProduct || !selectedFolder) {
+      toast.error("Select a product and folder first.");
+      return;
+    }
+    const itemId = addContentItem({
+      productId: selectedProduct.id,
+      folderId: selectedFolder.id,
+      title,
+      url,
+      source_type: sourceType,
+    });
+    // Simulate analysis completing after 3–5s
+    const delay = 3000 + Math.random() * 2000;
+    setTimeout(() => {
+      updateItemStatus(itemId, "analyzed", Math.floor(Math.random() * 40) + 35);
+    }, delay);
+    toast.success(`"${title}" added to ${selectedFolder.name} — analysing…`);
+    navigate(`/dashboard/content/${itemId}`);
+  }
 
   const tabs: { id: IngestTab; label: string; icon: React.ReactNode }[] = [
     { id: "upload", label: "File Upload", icon: <Upload className="h-3.5 w-3.5" /> },
@@ -97,13 +128,39 @@ export default function ContentPage() {
     { id: "api", label: "API", icon: <Zap className="h-3.5 w-3.5" /> },
   ];
 
-  const selectedGitOption = GIT_OPTIONS.find((g) => g.id === gitPlatform)!;
-
   return (
     <div className="p-6 space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Content Ingestion</h1>
-        <p className="text-muted-foreground text-sm mt-0.5">Import content from any source to analyze and optimize</p>
+        <p className="text-muted-foreground text-sm mt-0.5">Import content from any source to analyse and optimise</p>
+      </div>
+
+      {/* Target selector */}
+      <div className="rounded-xl border border-border bg-card p-4 flex flex-wrap items-center gap-4">
+        <span className="text-sm font-medium text-muted-foreground">Ingest into:</span>
+        <select
+          value={selectedProductId}
+          onChange={(e) => {
+            setSelectedProductId(e.target.value);
+            const p = products.find((p) => p.id === e.target.value);
+            setSelectedFolderId(p?.folders[0]?.id ?? "");
+          }}
+          className="rounded-lg border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+        >
+          {products.map((p) => (
+            <option key={p.id} value={p.id}>{p.name}</option>
+          ))}
+        </select>
+        <span className="text-muted-foreground text-sm">→</span>
+        <select
+          value={selectedFolderId}
+          onChange={(e) => setSelectedFolderId(e.target.value)}
+          className="rounded-lg border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+        >
+          {(selectedProduct?.folders ?? []).map((f) => (
+            <option key={f.id} value={f.id}>{f.name}</option>
+          ))}
+        </select>
       </div>
 
       <div className="rounded-xl border border-border bg-card p-6">
@@ -135,7 +192,6 @@ export default function ContentPage() {
               <Upload className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
               <p className="font-medium mb-1">Drop files here or click to select</p>
               <p className="text-sm text-muted-foreground">PDF, DOCX, TXT, Markdown, HTML, CSV, JSON — up to 50MB each</p>
-              <p className="text-xs text-muted-foreground mt-1">Bulk: zip archives and folders supported</p>
             </div>
             {acceptedFiles.length > 0 && (
               <div className="space-y-2">
@@ -143,14 +199,17 @@ export default function ContentPage() {
                   <div key={file.name} className="flex items-center gap-2 rounded-lg border border-border p-2.5 text-sm">
                     <FileText className="h-4 w-4 text-muted-foreground" />
                     <span className="flex-1 truncate">{file.name}</span>
-                    <span className="text-muted-foreground text-xs">{(file.size / 1024).toFixed(0)}KB</span>
+                    <span className="text-muted-foreground text-xs">{(file.size / 1024).toFixed(0)} KB</span>
                   </div>
                 ))}
                 <button
-                  onClick={() => toast.success("Files uploaded!")}
+                  onClick={() => {
+                    const first = acceptedFiles[0];
+                    ingest(first.name.replace(/\.\w+$/, ""), "#", "file");
+                  }}
                   className="w-full rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground flex items-center justify-center gap-2"
                 >
-                  Upload {acceptedFiles.length} file(s)
+                  <Upload className="h-4 w-4" /> Upload & Analyse {acceptedFiles.length} file(s)
                 </button>
               </div>
             )}
@@ -167,12 +226,15 @@ export default function ContentPage() {
                 <input
                   value={urlInput}
                   onChange={(e) => setUrlInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && urlInput) { ingest(titleFromUrl(urlInput), urlInput, "url"); setUrlInput(""); }
+                  }}
                   placeholder="https://example.com/page or https://example.com/sitemap.xml"
                   className="flex-1 rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
                 />
                 <button
                   disabled={!urlInput}
-                  onClick={() => { toast.success("URL queued for ingestion"); setUrlInput(""); }}
+                  onClick={() => { ingest(titleFromUrl(urlInput), urlInput, "url"); setUrlInput(""); }}
                   className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60"
                 >
                   Ingest
@@ -208,10 +270,10 @@ export default function ContentPage() {
             </div>
             <button
               disabled={!crawlUrl}
-              onClick={() => { toast.success("Crawl started!"); setCrawlUrl(""); }}
+              onClick={() => { ingest(`Crawl: ${titleFromUrl(crawlUrl)}`, crawlUrl, "crawl"); setCrawlUrl(""); }}
               className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60 flex items-center gap-2"
             >
-              Start Crawl
+              <Globe className="h-4 w-4" /> Start Crawl
             </button>
           </div>
         )}
@@ -247,7 +309,11 @@ export default function ContentPage() {
             <p className="text-xs text-muted-foreground">Ingests README, docs/, wiki, and markdown files from the repository</p>
             <button
               disabled={!gitUrl}
-              onClick={() => { toast.success(`${selectedGitOption.name} ingestion started`); setGitUrl(""); }}
+              onClick={() => {
+                const repoName = gitUrl.split("/").slice(-2).join(" / ");
+                ingest(`${selectedGitOption.name}: ${repoName}`, gitUrl, "api");
+                setGitUrl("");
+              }}
               className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60 flex items-center gap-2"
             >
               <Code2 className="h-4 w-4" /> Ingest Repository
@@ -278,12 +344,15 @@ export default function ContentPage() {
             <div className="rounded-xl border border-dashed border-border p-6 text-center">
               <Cloud className="h-8 w-8 text-muted-foreground/30 mx-auto mb-2" />
               <p className="text-sm font-medium mb-1">Connect {CLOUD_OPTIONS.find((c) => c.id === cloudProvider)?.name}</p>
-              <p className="text-xs text-muted-foreground mb-3">Authorize GAEO to access your cloud storage and select folders to sync</p>
+              <p className="text-xs text-muted-foreground mb-3">Authorise GAEO to access your cloud storage and select folders to sync</p>
               <button
-                onClick={() => toast.success("OAuth flow initiated — connect your account")}
+                onClick={() => {
+                  const provider = CLOUD_OPTIONS.find((c) => c.id === cloudProvider)!;
+                  ingest(`${provider.name} Import`, "#", "api");
+                }}
                 className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
               >
-                Connect Account
+                Connect & Import
               </button>
             </div>
           </div>
@@ -311,26 +380,21 @@ export default function ContentPage() {
             </div>
             <div>
               <label className="text-sm font-medium mb-1.5 block">Site / API URL</label>
-              <input
-                value={cmsUrl}
-                onChange={(e) => setCmsUrl(e.target.value)}
-                placeholder="https://your-site.com"
-                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
-              />
+              <input value={cmsUrl} onChange={(e) => setCmsUrl(e.target.value)} placeholder="https://your-site.com"
+                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring" />
             </div>
             <div>
               <label className="text-sm font-medium mb-1.5 block">API Key / Token</label>
-              <input
-                type="password"
-                value={cmsApiKey}
-                onChange={(e) => setCmsApiKey(e.target.value)}
-                placeholder="••••••••••••••••"
-                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
-              />
+              <input type="password" value={cmsApiKey} onChange={(e) => setCmsApiKey(e.target.value)} placeholder="••••••••••••••••"
+                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring" />
             </div>
             <button
               disabled={!cmsUrl || !cmsApiKey}
-              onClick={() => { toast.success(`${CMS_OPTIONS.find((c) => c.id === selectedCms)?.name} sync started`); setCmsUrl(""); setCmsApiKey(""); }}
+              onClick={() => {
+                const cmsName = CMS_OPTIONS.find((c) => c.id === selectedCms)!.name;
+                ingest(`${cmsName}: ${titleFromUrl(cmsUrl)}`, cmsUrl, "cms");
+                setCmsUrl(""); setCmsApiKey("");
+              }}
               className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60 flex items-center gap-2"
             >
               <Database className="h-4 w-4" /> Connect & Sync
@@ -338,90 +402,78 @@ export default function ContentPage() {
           </div>
         )}
 
-        {/* REST API Ingestion */}
+        {/* REST API */}
         {activeTab === "api" && (
           <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">Use the GAEO REST API to programmatically ingest content from your own pipelines or custom sources.</p>
-            <div>
-              <label className="text-sm font-medium mb-1.5 block">API Endpoint</label>
-              <div className="flex gap-2 items-center rounded-lg border border-border bg-muted/30 px-3 py-2 text-sm font-mono">
-                <span className="text-primary text-xs">POST</span>
-                <span className="text-muted-foreground">/api/v1/ingest</span>
-              </div>
+            <p className="text-sm text-muted-foreground">Use the GAEO REST API to programmatically ingest content from your own pipelines.</p>
+            <div className="flex gap-2 items-center rounded-lg border border-border bg-muted/30 px-3 py-2 text-sm font-mono">
+              <span className="text-primary text-xs">POST</span>
+              <span className="text-muted-foreground">/api/v1/ingest</span>
             </div>
             <div className="rounded-xl border border-border bg-muted/20 p-4">
-              <p className="text-xs font-medium text-muted-foreground mb-2">Example request payload:</p>
+              <p className="text-xs font-medium text-muted-foreground mb-2">Example payload:</p>
               <pre className="text-xs text-muted-foreground overflow-x-auto">{`{
   "title": "My Document",
   "content": "...",
-  "source_url": "https://example.com/doc",
-  "metadata": {
-    "topic": "AI observability",
-    "audience": "developers"
-  }
+  "source_url": "https://example.com/doc"
 }`}</pre>
             </div>
             <div>
               <label className="text-sm font-medium mb-1.5 block">Your API Key</label>
               <div className="flex gap-2">
-                <input
-                  type="password"
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
+                <input type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)}
                   placeholder="gaeo_live_••••••••••••••••"
-                  className="flex-1 rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring font-mono"
-                />
-                <button
-                  onClick={() => toast.success("API key copied to clipboard")}
-                  className="rounded-lg border border-border px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-accent"
-                >
-                  Copy
-                </button>
+                  className="flex-1 rounded-lg border border-input bg-background px-3 py-2 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-ring" />
+                <button onClick={() => toast.success("API key copied")}
+                  className="rounded-lg border border-border px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-accent">Copy</button>
               </div>
             </div>
             <div>
               <label className="text-sm font-medium mb-1.5 block">Test Endpoint URL</label>
               <div className="flex gap-2">
-                <input
-                  value={apiEndpoint}
-                  onChange={(e) => setApiEndpoint(e.target.value)}
+                <input value={apiEndpoint} onChange={(e) => setApiEndpoint(e.target.value)}
                   placeholder="https://your-api.com/content-feed"
-                  className="flex-1 rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
-                />
-                <button
-                  disabled={!apiEndpoint}
-                  onClick={() => { toast.success("API ingestion test initiated"); setApiEndpoint(""); }}
-                  className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60"
-                >
-                  Test
-                </button>
+                  className="flex-1 rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring" />
+                <button disabled={!apiEndpoint}
+                  onClick={() => { ingest(`API: ${titleFromUrl(apiEndpoint)}`, apiEndpoint, "api"); setApiEndpoint(""); }}
+                  className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60">Ingest</button>
               </div>
             </div>
           </div>
         )}
       </div>
 
-      {/* Content Assets List */}
+      {/* All Content Assets */}
       <div className="rounded-xl border border-border bg-card">
         <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-          <h2 className="font-semibold">Content Assets</h2>
-          <span className="text-sm text-muted-foreground">{demoAssets.length} total</span>
+          <h2 className="font-semibold">All Content Assets</h2>
+          <span className="text-sm text-muted-foreground">{allItems.length} total</span>
         </div>
         <div className="divide-y divide-border">
-          {demoAssets.map((asset) => (
-            <div key={asset.id} className="flex items-center gap-3 px-5 py-3 hover:bg-accent/30 transition-colors">
+          {allItems.map((asset) => (
+            <button
+              key={asset.id}
+              onClick={() => navigate(`/dashboard/content/${asset.id}`)}
+              className="flex items-center gap-3 px-5 py-3 hover:bg-accent/30 transition-colors w-full text-left"
+            >
               <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate">{asset.title}</p>
                 <p className="text-xs text-muted-foreground truncate">
-                  {asset.source_url || asset.source_type} • {asset.word_count ? `${asset.word_count.toLocaleString()} words` : "processing"}
+                  {asset.productName} → {asset.folderName} · {asset.source_type}
+                  {asset.word_count ? ` · ${asset.word_count.toLocaleString()} words` : ""}
                 </p>
               </div>
-              <div className="flex items-center gap-2">
-                {asset.file_type && <span className="text-xs bg-muted rounded px-1.5 py-0.5">{asset.file_type}</span>}
+              <div className="flex items-center gap-2 flex-shrink-0">
+                {asset.score !== null && (
+                  <span className={`text-xs font-bold ${asset.score >= 65 ? "text-green-400" : asset.score >= 45 ? "text-yellow-400" : "text-red-400"}`}>
+                    {asset.score}
+                  </span>
+                )}
                 {statusIcon[asset.status]}
+                <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
               </div>
-            </div>
+            </button>
           ))}
         </div>
       </div>
