@@ -1,24 +1,66 @@
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
+# Environment
+.env
+.env.local
+.env.production
+*.env
 
-node_modules
-dist
-dist-ssr
-*.local
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+ENV/
+env/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+.coverage.*
 
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
+# Alembic
+apps/api/alembic/versions/*.py
+!apps/api/alembic/versions/0001_initial_schema.py
+
+# Node.js
+node_modules/
+.npm
+.yarn/
+.pnp.*
+
+# Next.js
+apps/web/.next/
+apps/web/out/
+apps/web/build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
 .DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+Thumbs.db
+
+# Docker
+docker-compose.override.yml
+
+# Uploads
+apps/api/uploads/
+apps/api/*.log
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# Misc
+*.log
+*.pid
+coverage/
