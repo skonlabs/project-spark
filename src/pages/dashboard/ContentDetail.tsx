@@ -585,6 +585,36 @@ export default function ContentDetailPage() {
         {/* ─── Gap Analysis ─────────────────────────────────────── */}
         {activeTab === "analysis" && (
           <div className="p-6 space-y-6">
+            {/* Sources banner — Gap Analysis uses Prompts + Original Content */}
+            <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Analysis Inputs</p>
+              <div className="flex items-center gap-3 flex-wrap">
+                <div className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2">
+                  <FileText className="h-4 w-4 text-primary" />
+                  <div>
+                    <p className="text-xs font-medium">Original Content</p>
+                    <p className="text-[10px] text-muted-foreground">"{item.title}" · {item.word_count ?? '—'} words</p>
+                  </div>
+                </div>
+                <span className="text-muted-foreground text-lg">+</span>
+                <div className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2">
+                  <Sparkles className="h-4 w-4 text-primary" />
+                  <div>
+                    <p className="text-xs font-medium">Prompt Database</p>
+                    <p className="text-[10px] text-muted-foreground">{getProductPrompts(product.id).length} tracked prompts · {getProductPrompts(product.id).filter(p => !p.covered).length} gaps</p>
+                  </div>
+                </div>
+                <span className="text-muted-foreground text-lg">=</span>
+                <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/10 px-3 py-2">
+                  <AlertTriangle className="h-4 w-4 text-primary" />
+                  <div>
+                    <p className="text-xs font-medium text-primary">Gap Analysis</p>
+                    <p className="text-[10px] text-muted-foreground">Gaps found by comparing content against prompts</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {!analysis ? (
               <div className="rounded-xl border border-border bg-muted/20 p-12 flex flex-col items-center gap-3 text-center">
                 <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
