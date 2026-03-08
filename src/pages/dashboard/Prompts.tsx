@@ -72,7 +72,7 @@ export default function PromptsPage() {
     <div className="p-6 lg:p-8 space-y-6">
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold" style={{ fontFamily: "'Space Grotesk'" }}>Prompt Engine</h1>
+          <h1 className="text-2xl font-heading font-bold tracking-tight">Prompt Engine</h1>
           <p className="text-muted-foreground text-sm mt-0.5">Manage prompts users ask AI systems — by interaction intent</p>
         </div>
         <button onClick={handleDiscover} disabled={isDiscovering} className="btn-primary text-xs px-4 py-2">
