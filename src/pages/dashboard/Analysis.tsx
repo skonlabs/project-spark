@@ -14,7 +14,19 @@ import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { ScoreRing } from "@/components/dashboard/ScoreRing";
 import { ScoreBar } from "@/components/dashboard/ScoreBar";
+import { getProductPrompts } from "@/data/products";
 import type { AnalysisReport } from "@/types";
+
+const PRODUCT_ID = "product-gaeo";
+
+const INTENT_LABELS: Record<string, string> = {
+  seek_explanation: "Explain / What is",
+  find_best: "Find the best",
+  compare: "Compare options",
+  learn_howto: "Learn how-to",
+  find_alternative: "Find alternatives",
+  troubleshoot: "Troubleshoot / Fix",
+};
 
 const SCORE_DIMENSIONS = [
   { key: "entity_clarity", label: "Entity Clarity", description: "How clearly your product entity is defined", score: 65 },
@@ -33,7 +45,7 @@ const DIMENSION_TIPS: Record<string, string> = {
   entity_clarity: "State clearly what your product is in the first 2 sentences of every key page.",
   category_ownership: "Consistently use your primary category keyword across all content.",
   educational_authority: "Publish comprehensive educational guides on core industry concepts.",
-  prompt_coverage: "Create content that directly answers the top questions users ask AI.",
+  prompt_coverage: "Create content that directly answers the top questions users ask AI. Add more prompts via the Prompts page.",
   comparison_coverage: "Publish X vs Y articles and 'best tools' comparison lists.",
   ecosystem_coverage: "Cover all sub-topics and related concepts in your product category.",
   external_authority: "Build backlinks and get mentioned in industry blogs and GitHub repos.",
@@ -272,11 +284,112 @@ export default function AnalysisPage() {
       )}
 
       {/* Content Gaps */}
-      {activeTab === "gaps" && (
-        <div className="space-y-3">
-          <p className="text-sm text-muted-foreground">
-            High-importance topics not covered by your content. Creating these articles will directly improve your AI Visibility Score.
-          </p>
+      {activeTab === "gaps" && (() => {
+        const allPrompts = getProductPrompts(PRODUCT_ID);
+        const coveredPrompts = allPrompts.filter((p) => p.covered);
+        const gapPrompts = allPrompts.filter((p) => !p.covered);
+        const coveragePct = allPrompts.length > 0 ? Math.round((coveredPrompts.length / allPrompts.length) * 100) : 0;
+        return (
+        <div className="space-y-6">
+          {/* Prompt Coverage section */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="font-semibold">Prompt Coverage</h2>
+                <p className="text-sm text-muted-foreground mt-0.5">
+                  Which prompts from your product database are covered by existing content?
+                </p>
+              </div>
+              <button
+                onClick={() => { navigate("/dashboard/prompts"); toast.success("Opening Prompts"); }}
+                className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+              >
+                Manage prompts <ArrowRight className="h-3 w-3" />
+              </button>
+            </div>
+
+            {allPrompts.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-border p-8 text-center text-muted-foreground">
+                <p className="text-sm">No prompts in database yet.</p>
+                <p className="text-xs mt-1">
+                  Use the <button onClick={() => navigate("/dashboard/prompts")} className="text-primary hover:underline">Prompts page</button> or the "Generate Prompts" feature in content items to add prompts.
+                </p>
+              </div>
+            ) : (
+              <>
+                {/* Coverage summary bar */}
+                <div className="rounded-xl border border-border bg-card p-4">
+                  <div className="flex items-center justify-between mb-2 text-sm">
+                    <span className="text-muted-foreground">{coveredPrompts.length} of {allPrompts.length} prompts covered</span>
+                    <span className={`font-bold ${coveragePct >= 50 ? "text-yellow-400" : "text-red-400"}`}>{coveragePct}%</span>
+                  </div>
+                  <div className="h-2 bg-muted rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full ${coveragePct >= 60 ? "bg-green-400" : coveragePct >= 30 ? "bg-yellow-400" : "bg-red-400"}`}
+                      style={{ width: `${coveragePct}%` }}
+                    />
+                  </div>
+                  <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-green-400 inline-block" /> {coveredPrompts.length} covered</span>
+                    <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-red-400 inline-block" /> {gapPrompts.length} gaps</span>
+                  </div>
+                </div>
+
+                {/* Gap prompts */}
+                {gapPrompts.length > 0 && (
+                  <div className="rounded-xl border border-border bg-card overflow-hidden">
+                    <div className="px-4 py-3 border-b border-border bg-muted/20">
+                      <p className="text-sm font-semibold text-red-400">Uncovered prompts — {gapPrompts.length} gaps</p>
+                    </div>
+                    <div className="divide-y divide-border">
+                      {gapPrompts.map((p) => (
+                        <div key={p.id} className="flex items-center gap-3 px-4 py-3">
+                          <AlertCircle className="h-4 w-4 text-red-400 flex-shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm">{p.text}</p>
+                            <p className="text-xs text-muted-foreground mt-0.5">{INTENT_LABELS[p.intent] ?? p.intent}</p>
+                          </div>
+                          <button
+                            onClick={() => { navigate("/dashboard/content/generate"); toast.success(`Opening content generator for: "${p.text}"`); }}
+                            className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors flex-shrink-0"
+                          >
+                            <Sparkles className="h-3 w-3" /> Create Content
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Covered prompts (collapsed summary) */}
+                {coveredPrompts.length > 0 && (
+                  <div className="rounded-xl border border-border bg-card overflow-hidden">
+                    <div className="px-4 py-3 border-b border-border bg-muted/20">
+                      <p className="text-sm font-semibold text-green-400">Covered prompts — {coveredPrompts.length} prompts</p>
+                    </div>
+                    <div className="divide-y divide-border">
+                      {coveredPrompts.map((p) => (
+                        <div key={p.id} className="flex items-center gap-3 px-4 py-2.5">
+                          <Zap className="h-4 w-4 text-green-400 flex-shrink-0" />
+                          <p className="text-sm flex-1">{p.text}</p>
+                          <span className="text-xs text-muted-foreground">{INTENT_LABELS[p.intent] ?? p.intent}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* Topic content gaps */}
+          <div className="space-y-3">
+            <div>
+              <h2 className="font-semibold">Topic Content Gaps</h2>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                High-importance topics not covered by your content. Creating these articles will directly improve your AI Visibility Score.
+              </p>
+            </div>
           {report.content_gaps?.map((gap, i) => (
             <div key={i} className="rounded-xl border border-border bg-card p-4">
               <div className="flex items-start gap-4">
@@ -325,8 +438,10 @@ export default function AnalysisPage() {
               </div>
             </div>
           ))}
+          </div>
         </div>
-      )}
+        );
+      })()}
 
       {/* Content Roadmap */}
       {activeTab === "roadmap" && (

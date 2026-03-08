@@ -16,6 +16,8 @@ import {
   X,
   Globe,
   FileUp,
+  MessageSquare,
+  BarChart2,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { MOCK_PRODUCTS } from "@/data/products";
@@ -241,6 +243,39 @@ export default function DashboardLayout() {
 
         {/* Footer nav */}
         <div className="border-t border-border py-2 px-2 space-y-0.5 flex-shrink-0">
+          <Link
+            to="/dashboard/content"
+            className={`flex items-center gap-2 px-2 py-2 rounded-md text-sm transition-colors ${
+              isRouteActive("/dashboard/content")
+                ? "bg-accent text-foreground font-medium"
+                : "text-muted-foreground hover:text-foreground hover:bg-accent/60"
+            }`}
+          >
+            <Upload className="h-4 w-4" />
+            Content Ingestion
+          </Link>
+          <Link
+            to="/dashboard/prompts"
+            className={`flex items-center gap-2 px-2 py-2 rounded-md text-sm transition-colors ${
+              isRouteActive("/dashboard/prompts")
+                ? "bg-accent text-foreground font-medium"
+                : "text-muted-foreground hover:text-foreground hover:bg-accent/60"
+            }`}
+          >
+            <MessageSquare className="h-4 w-4" />
+            Prompts
+          </Link>
+          <Link
+            to="/dashboard/analysis"
+            className={`flex items-center gap-2 px-2 py-2 rounded-md text-sm transition-colors ${
+              isRouteActive("/dashboard/analysis")
+                ? "bg-accent text-foreground font-medium"
+                : "text-muted-foreground hover:text-foreground hover:bg-accent/60"
+            }`}
+          >
+            <BarChart2 className="h-4 w-4" />
+            Gap Analysis
+          </Link>
           <Link
             to="/dashboard/competitive"
             className={`flex items-center gap-2 px-2 py-2 rounded-md text-sm transition-colors ${
