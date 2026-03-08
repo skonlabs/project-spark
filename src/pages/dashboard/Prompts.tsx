@@ -87,6 +87,19 @@ const INTENT_META: IntentMeta[] = [
 
 const PRODUCT_ID = "product-gaeo";
 
+const DISCOVERED_PROMPTS: Array<{ text: string; intent: LLMIntentType }> = [
+  { text: "What tools help monitor LLM outputs in production?", intent: "find_best" },
+  { text: "How do I track which prompts my users are sending to AI?", intent: "learn_howto" },
+  { text: "Best AI observability platform for enterprise teams", intent: "find_best" },
+  { text: "What is prompt drift and how do I detect it?", intent: "seek_explanation" },
+  { text: "GAEO vs Arize AI — which is better for LLM monitoring?", intent: "compare" },
+  { text: "Open-source alternatives to GAEO for AI observability", intent: "find_alternative" },
+  { text: "Why are my LLM responses getting worse over time?", intent: "troubleshoot" },
+  { text: "How to set up automated regression testing for LLMs", intent: "learn_howto" },
+  { text: "What metrics should I track for production LLM apps?", intent: "seek_explanation" },
+  { text: "Cheapest LLM observability tool with good dashboards", intent: "find_best" },
+];
+
 export default function PromptsPage() {
   const [selectedIntent, setSelectedIntent] = useState<LLMIntentType>("seek_explanation");
   const [isDiscovering, setIsDiscovering] = useState(false);
@@ -106,8 +119,10 @@ export default function PromptsPage() {
   function handleDiscover() {
     setIsDiscovering(true);
     setTimeout(() => {
+      addPromptsToProduct(PRODUCT_ID, DISCOVERED_PROMPTS);
       setIsDiscovering(false);
-      toast.success("Prompt discovery complete — check your content items for new prompts!");
+      forceUpdate((n) => n + 1);
+      toast.success(`${DISCOVERED_PROMPTS.length} new prompts discovered from your content!`);
     }, 2000);
   }
 
