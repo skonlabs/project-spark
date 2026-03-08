@@ -9,8 +9,11 @@ import {
   Sparkles,
   TrendingUp,
   Zap,
+  MessageSquare,
+  Brain,
+  FileText,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { ScoreRing } from "@/components/dashboard/ScoreRing";
 import { ScoreBar } from "@/components/dashboard/ScoreBar";
@@ -129,9 +132,9 @@ export default function AnalysisPage() {
     }, 2500);
   }
 
+  // Navigate to content generator with pre-filled topic
   function handleGenerateContent(title: string) {
-    navigate("/dashboard/content");
-    toast.success(`Opening content generator for: "${title}"`);
+    navigate(`/dashboard/content/generate?topic=${encodeURIComponent(title)}`);
   }
 
   function handleAddToRoadmap() {
@@ -148,7 +151,6 @@ export default function AnalysisPage() {
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          {/* Product selector */}
           <div className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2">
             <span className="text-xs text-muted-foreground font-medium">Product:</span>
             <select
@@ -172,6 +174,23 @@ export default function AnalysisPage() {
         </div>
       </div>
 
+      {/* Connected features bar */}
+      <div className="rounded-xl border border-border bg-card/50 p-4 flex flex-wrap items-center gap-3">
+        <span className="text-xs font-medium text-muted-foreground">Related:</span>
+        <Link to="/dashboard/prompts" className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium hover:bg-accent/40 hover:border-primary/30 transition-colors">
+          <MessageSquare className="h-3 w-3 text-primary" /> Prompt Database
+        </Link>
+        <Link to="/dashboard/simulation" className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium hover:bg-accent/40 hover:border-primary/30 transition-colors">
+          <Brain className="h-3 w-3 text-primary" /> Simulation
+        </Link>
+        <Link to="/dashboard/topics" className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium hover:bg-accent/40 hover:border-primary/30 transition-colors">
+          <FileText className="h-3 w-3 text-primary" /> Topic Map
+        </Link>
+        <Link to="/dashboard/content" className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium hover:bg-accent/40 hover:border-primary/30 transition-colors">
+          <Plus className="h-3 w-3 text-primary" /> Ingest Content
+        </Link>
+      </div>
+
       {/* Product context banner */}
       {selectedProduct && (
         <div className="rounded-xl border border-border bg-card px-4 py-3 flex items-center gap-3">
@@ -191,7 +210,7 @@ export default function AnalysisPage() {
         </div>
       )}
 
-      {/* Score overview — always visible */}
+      {/* Score overview */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="rounded-xl border border-border bg-card p-6 flex flex-col items-center">
           <ScoreRing score={OVERALL_SCORE} size={200} />
@@ -305,18 +324,18 @@ export default function AnalysisPage() {
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium mb-2">{rec.action}</p>
                 <div className="flex items-center gap-2 flex-wrap">
-                  <button
-                    onClick={() => handleGenerateContent(rec.action)}
+                  <Link
+                    to={`/dashboard/content/generate?topic=${encodeURIComponent(rec.action)}`}
                     className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
                   >
                     <Sparkles className="h-3 w-3" /> Generate Content
-                  </button>
-                  <button
-                    onClick={handleAddToRoadmap}
+                  </Link>
+                  <Link
+                    to="/dashboard/content"
                     className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
                   >
-                    <Plus className="h-3 w-3" /> Add to Roadmap
-                  </button>
+                    <Plus className="h-3 w-3" /> Ingest Existing
+                  </Link>
                 </div>
               </div>
               <div className="flex items-center gap-1 flex-shrink-0">
@@ -345,79 +364,53 @@ export default function AnalysisPage() {
                   Which prompts from your product database are covered by existing content?
                 </p>
               </div>
-              <button
-                onClick={() => { navigate("/dashboard/prompts"); toast.success("Opening Prompts"); }}
+              <Link
+                to="/dashboard/prompts"
                 className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
               >
                 Manage prompts <ArrowRight className="h-3 w-3" />
-              </button>
+              </Link>
             </div>
 
             {allPrompts.length === 0 ? (
               <div className="rounded-xl border border-dashed border-border p-8 text-center text-muted-foreground">
-                <p className="text-sm">No prompts in database yet.</p>
-                <p className="text-xs mt-1">
-                  Use the <button onClick={() => navigate("/dashboard/prompts")} className="text-primary hover:underline">Prompts page</button> or the "Generate Prompts" feature in content items to add prompts.
-                </p>
+                <p className="mb-2">No prompts in your database yet.</p>
+                <Link to="/dashboard/prompts" className="inline-flex items-center gap-1 text-xs text-primary hover:underline font-medium">
+                  <Plus className="h-3 w-3" /> Add prompts to track coverage
+                </Link>
               </div>
             ) : (
               <>
-                {/* Coverage summary bar */}
                 <div className="rounded-xl border border-border bg-card p-4">
-                  <div className="flex items-center justify-between mb-2 text-sm">
-                    <span className="text-muted-foreground">{coveredPrompts.length} of {allPrompts.length} prompts covered</span>
-                    <span className={`font-bold ${coveragePct >= 50 ? "text-yellow-400" : "text-red-400"}`}>{coveragePct}%</span>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium">{coveragePct}% covered</span>
+                    <span className="text-xs text-muted-foreground">{coveredPrompts.length} / {allPrompts.length}</span>
                   </div>
                   <div className="h-2 bg-muted rounded-full overflow-hidden">
-                    <div
-                      className={`h-full rounded-full ${coveragePct >= 60 ? "bg-green-400" : coveragePct >= 30 ? "bg-yellow-400" : "bg-red-400"}`}
-                      style={{ width: `${coveragePct}%` }}
-                    />
-                  </div>
-                  <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-green-400 inline-block" /> {coveredPrompts.length} covered</span>
-                    <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-red-400 inline-block" /> {gapPrompts.length} gaps</span>
+                    <div className="h-full bg-emerald-400 rounded-full transition-all" style={{ width: `${coveragePct}%` }} />
                   </div>
                 </div>
 
-                {/* Gap prompts */}
                 {gapPrompts.length > 0 && (
                   <div className="rounded-xl border border-border bg-card overflow-hidden">
-                    <div className="px-4 py-3 border-b border-border bg-muted/20">
-                      <p className="text-sm font-semibold text-red-400">Uncovered prompts — {gapPrompts.length} gaps</p>
+                    <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+                      <h3 className="font-medium text-sm">Uncovered Prompts ({gapPrompts.length})</h3>
+                      <Link to="/dashboard/content/generate" className="text-xs text-primary hover:underline flex items-center gap-1">
+                        <Zap className="h-3 w-3" /> Generate content for gaps
+                      </Link>
                     </div>
                     <div className="divide-y divide-border">
-                      {gapPrompts.map((p) => (
-                        <div key={p.id} className="flex items-center gap-3 px-4 py-3">
-                          <AlertCircle className="h-4 w-4 text-red-400 flex-shrink-0" />
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm">{p.text}</p>
-                            <p className="text-xs text-muted-foreground mt-0.5">{INTENT_LABELS[p.intent] ?? p.intent}</p>
-                          </div>
-                          <button
-                            onClick={() => { navigate("/dashboard/content"); toast.success(`Opening content generator for: "${p.text}"`); }}
-                            className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors flex-shrink-0"
+                      {gapPrompts.slice(0, 8).map((p) => (
+                        <div key={p.id} className="flex items-center gap-3 px-4 py-2.5 hover:bg-accent/15 transition-colors">
+                          <AlertCircle className="h-3.5 w-3.5 text-red-400 flex-shrink-0" />
+                          <span className="text-xs flex-1">{p.text}</span>
+                          <span className="text-[10px] text-muted-foreground capitalize">{INTENT_LABELS[p.intent] ?? p.intent}</span>
+                          <Link
+                            to={`/dashboard/content/generate?topic=${encodeURIComponent(p.text)}`}
+                            className="text-[10px] text-primary hover:underline flex items-center gap-0.5"
                           >
-                            <Sparkles className="h-3 w-3" /> Create Content
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Covered prompts (collapsed summary) */}
-                {coveredPrompts.length > 0 && (
-                  <div className="rounded-xl border border-border bg-card overflow-hidden">
-                    <div className="px-4 py-3 border-b border-border bg-muted/20">
-                      <p className="text-sm font-semibold text-green-400">Covered prompts — {coveredPrompts.length} prompts</p>
-                    </div>
-                    <div className="divide-y divide-border">
-                      {coveredPrompts.map((p) => (
-                        <div key={p.id} className="flex items-center gap-3 px-4 py-2.5">
-                          <Zap className="h-4 w-4 text-green-400 flex-shrink-0" />
-                          <p className="text-sm flex-1">{p.text}</p>
-                          <span className="text-xs text-muted-foreground">{INTENT_LABELS[p.intent] ?? p.intent}</span>
+                            <Zap className="h-2.5 w-2.5" /> Generate
+                          </Link>
                         </div>
                       ))}
                     </div>
@@ -427,62 +420,41 @@ export default function AnalysisPage() {
             )}
           </div>
 
-          {/* Topic content gaps */}
+          {/* Content gaps from analysis */}
           <div className="space-y-3">
-            <div>
-              <h2 className="font-semibold">Topic Content Gaps</h2>
-              <p className="text-sm text-muted-foreground mt-0.5">
-                High-importance topics not covered by your content. Creating these articles will directly improve your AI Visibility Score.
-              </p>
-            </div>
-          {report.content_gaps?.map((gap, i) => (
-            <div key={i} className="rounded-xl border border-border bg-card p-4">
-              <div className="flex items-start gap-4">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1 flex-wrap">
-                    <AlertCircle className="h-4 w-4 text-orange-400 flex-shrink-0" />
-                    <p className="font-medium text-sm">{gap.topic}</p>
-                    <span
-                      className={`text-xs px-2 py-0.5 rounded-full ${
-                        gap.suggested_format === "guide" ? "bg-blue-500/15 text-blue-400" : "bg-green-500/15 text-green-400"
-                      }`}
-                    >
-                      {gap.suggested_format}
+            <h2 className="font-semibold">Topic Gaps</h2>
+            <p className="text-sm text-muted-foreground">
+              Topics your content doesn't cover that are important for AI visibility.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {report.content_gaps?.map((gap, i) => (
+                <div key={i} className="rounded-xl border border-border bg-card p-4 hover:border-primary/30 transition-colors">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="font-medium text-sm">{gap.topic}</h3>
+                    <span className={`text-xs px-2 py-0.5 rounded-full border ${gap.importance >= 8 ? "text-red-400 bg-red-500/10 border-red-500/20" : "text-yellow-400 bg-yellow-500/10 border-yellow-500/20"}`}>
+                      {gap.importance}/10
                     </span>
                   </div>
                   <p className="text-xs text-muted-foreground mb-3">
-                    Suggested: <span className="text-foreground font-medium">{gap.suggested_title}</span>
+                    Suggested: "{gap.suggested_title}" ({gap.suggested_format})
                   </p>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <button
-                      onClick={() => handleGenerateContent(gap.suggested_title)}
-                      className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+                  <div className="flex gap-2">
+                    <Link
+                      to={`/dashboard/content/generate?topic=${encodeURIComponent(gap.suggested_title)}`}
+                      className="inline-flex items-center gap-1 rounded-lg bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
                     >
-                      <Sparkles className="h-3 w-3" /> Generate Article
-                    </button>
-                    <button
-                      onClick={handleAddToRoadmap}
-                      className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                      <Sparkles className="h-3 w-3" /> Generate
+                    </Link>
+                    <Link
+                      to="/dashboard/topics"
+                      className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
                     >
-                      <Plus className="h-3 w-3" /> Add to Roadmap
-                    </button>
-                    <button
-                      onClick={() => { navigate("/dashboard/prompts"); toast.success("Opening Prompt Engine"); }}
-                      className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      <Zap className="h-3 w-3" /> Find prompts <ArrowRight className="h-3 w-3" />
-                    </button>
+                      View in Topic Map
+                    </Link>
                   </div>
                 </div>
-                <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                  <div className="h-2 w-16 rounded-full bg-muted overflow-hidden">
-                    <div className="h-full rounded-full bg-orange-500" style={{ width: `${gap.importance * 10}%` }} />
-                  </div>
-                  <span className="text-xs text-muted-foreground">Importance {gap.importance}/10</span>
-                </div>
-              </div>
+              ))}
             </div>
-          ))}
           </div>
         </div>
         );
@@ -490,77 +462,53 @@ export default function AnalysisPage() {
 
       {/* Content Roadmap */}
       {activeTab === "roadmap" && (
-        <div className="space-y-4">
-          <p className="text-sm text-muted-foreground">Your prioritized 90-day content roadmap based on AI visibility impact analysis.</p>
-          {report.content_roadmap?.map((item) => (
-            <div key={item.priority} className="rounded-xl border border-border bg-card p-5">
-              <div className="flex items-start gap-3">
-                <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 text-sm font-bold text-primary">
+        <div className="space-y-3">
+          <p className="text-sm text-muted-foreground">
+            Prioritized content plan — each item targets specific prompts and score dimensions.
+          </p>
+          {report.content_roadmap?.map((item, i) => (
+            <div key={i} className="rounded-xl border border-border bg-card p-5">
+              <div className="flex items-start gap-3 mb-3">
+                <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 text-sm font-bold text-primary border border-primary/15">
                   {item.priority}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-2 mb-1">
-                    <h3 className="font-semibold">{item.title}</h3>
-                    <span
-                      className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${
-                        item.type === "guide" ? "bg-blue-500/15 text-blue-400" : item.type === "comparison" ? "bg-orange-500/15 text-orange-400" : "bg-green-500/15 text-green-400"
-                      }`}
-                    >
-                      {item.type}
-                    </span>
-                  </div>
-                  <p className="text-sm text-muted-foreground mb-2">{item.expected_impact}</p>
-
-                  {item.score_impact && (
-                    <div className="flex items-center gap-1.5 mb-2">
-                      <TrendingUp className="h-3.5 w-3.5 text-green-400" />
-                      <span className="text-xs text-green-400 font-medium">
-                        +{item.score_impact.estimated_gain} pts on {item.score_impact.metric.replace(/_/g, " ")}
-                      </span>
-                    </div>
-                  )}
-
-                  <div className="flex flex-wrap gap-1.5 mb-3">
-                    {item.target_prompts.map((p, i) => (
-                      <span key={i} className="text-xs bg-muted rounded px-2 py-0.5 text-muted-foreground">{p}</span>
-                    ))}
-                  </div>
-
-                  {item.outline && (
-                    <div className="mb-4 pt-3 border-t border-border">
-                      <p className="text-xs text-muted-foreground mb-1.5">Article outline:</p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {item.outline.map((section, idx) => (
-                          <span key={idx} className="text-xs flex items-center gap-0.5 text-muted-foreground">
-                            {idx > 0 && <ChevronRight className="h-3 w-3" />}
-                            {section}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <button
-                      onClick={() => handleGenerateContent(item.title)}
-                      className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
-                    >
-                      <Sparkles className="h-3 w-3" /> Generate Content
-                    </button>
-                    <button
-                      onClick={() => { navigate("/dashboard/simulation"); toast.success("Added prompts to simulation queue"); }}
-                      className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-                    >
-                      <Play className="h-3 w-3" /> Test in Simulation
-                    </button>
-                    <button
-                      onClick={() => { navigate("/dashboard/prompts"); toast.success("Opening Prompt Engine"); }}
-                      className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      <Zap className="h-3 w-3" /> Find more prompts <ArrowRight className="h-3 w-3" />
-                    </button>
-                  </div>
+                  <h3 className="font-semibold text-sm">{item.title}</h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">{item.expected_impact}</p>
                 </div>
+                <span className={`text-xs px-2 py-0.5 rounded-full font-medium border ${item.type === "guide" ? "bg-blue-500/10 text-blue-400 border-blue-500/15" : "bg-orange-500/10 text-orange-400 border-orange-500/15"}`}>
+                  {item.type}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2 mb-3 text-xs text-muted-foreground">
+                <span>Targets:</span>
+                {item.target_prompts.map((p) => (
+                  <span key={p} className="bg-muted rounded px-1.5 py-0.5 font-mono text-[10px]">{p}</span>
+                ))}
+              </div>
+
+              {item.score_impact && (
+                <div className="flex items-center gap-1 mb-3 text-xs">
+                  <TrendingUp className="h-3 w-3 text-green-400" />
+                  <span className="text-green-400 font-medium">+{item.score_impact.estimated_gain} pts</span>
+                  <span className="text-muted-foreground">on {item.score_impact.metric.replace(/_/g, " ")}</span>
+                </div>
+              )}
+
+              <div className="flex gap-2">
+                <Link
+                  to={`/dashboard/content/generate?topic=${encodeURIComponent(item.title)}`}
+                  className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+                >
+                  <Sparkles className="h-3 w-3" /> Generate This Content
+                </Link>
+                <Link
+                  to={`/dashboard/simulation?prompt=${encodeURIComponent(item.target_prompts[0])}`}
+                  className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                >
+                  <Play className="h-3 w-3" /> Simulate Prompts
+                </Link>
               </div>
             </div>
           ))}
