@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import {
   AlertTriangle, ArrowRight, ArrowUpRight, BarChart3, Brain, CheckCircle2,
   ChevronRight, Clock, File, FileText, Folder, Monitor, Package2, Plus,
-  Sparkles, Swords, Upload, Zap,
+  Sparkles, Swords, Upload, Zap, Send,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { MOCK_PRODUCTS, getAllContent, getProductStats, CONTENT_ANALYSIS } from "@/data/products";
@@ -26,12 +26,12 @@ function RelativeTime({ iso }: { iso: string }) {
 }
 
 export default function HomePage() {
-  const recentContent = getAllContent()
+  const allContent = getAllContent();
+  const recentContent = allContent
     .filter((c) => c.item.status === "analyzed")
     .sort((a, b) => new Date(b.item.ingested_at).getTime() - new Date(a.item.ingested_at).getTime())
     .slice(0, 5);
 
-  const allContent = getAllContent();
   const criticalItems = allContent.filter((c) => {
     const a = CONTENT_ANALYSIS[c.item.id];
     return a?.gaps.some((g) => g.severity === "critical");
@@ -39,11 +39,11 @@ export default function HomePage() {
 
   const totalContent = allContent.length;
   const analyzedContent = allContent.filter(c => c.item.status === "analyzed").length;
+  const lowScoreItems = allContent.filter(c => c.item.score !== null && c.item.score < 65).length;
   const avgScore = Math.round(allContent.filter(c => c.item.score !== null).reduce((sum, c) => sum + (c.item.score ?? 0), 0) / Math.max(1, allContent.filter(c => c.item.score !== null).length));
 
   return (
     <div className="p-6 lg:p-8 space-y-6 max-w-[1200px]">
-      {/* Header */}
       <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-heading font-bold tracking-tight">Dashboard</h1>
@@ -54,13 +54,13 @@ export default function HomePage() {
         </Link>
       </motion.div>
 
-      {/* KPI cards */}
+      {/* KPI cards — each links to its aggregate dashboard */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
           { label: "AI Visibility Score", value: String(avgScore), suffix: "/100", change: "+3 this week", positive: true, icon: BarChart3, href: "/dashboard/analysis" },
-          { label: "LLM Mention Rate", value: "18", suffix: "%", change: "-2% vs last week", positive: false, icon: Brain, href: "/dashboard/simulation" },
-          { label: "Content Assets", value: String(totalContent), suffix: ` (${analyzedContent} analyzed)`, change: "+12 this month", positive: true, icon: FileText, href: "/dashboard/content" },
-          { label: "Critical Issues", value: String(criticalItems.length), suffix: " items", change: "Needs attention", positive: false, icon: Monitor, href: "/dashboard/monitoring" },
+          { label: "Content Library", value: String(totalContent), suffix: ` (${analyzedContent} analyzed)`, change: `${lowScoreItems} need work`, positive: lowScoreItems === 0, icon: FileText, href: "/dashboard/content" },
+          { label: "Critical Gaps", value: String(criticalItems.length), suffix: " items", change: "Click to view", positive: criticalItems.length === 0, icon: AlertTriangle, href: "/dashboard/analysis" },
+          { label: "Ready to Generate", value: String(lowScoreItems), suffix: " items", change: "Score < 65", positive: false, icon: Sparkles, href: "/dashboard/content/generate" },
         ].map((stat, i) => {
           const Icon = stat.icon;
           return (
@@ -68,7 +68,7 @@ export default function HomePage() {
               <Link to={stat.href} className="stat-card block hover:border-primary/20 transition-colors">
                 <div className="flex items-center justify-between mb-3">
                   <Icon className="h-4 w-4 text-muted-foreground/50" />
-                  <span className={`text-[10px] font-medium ${stat.positive ? "text-emerald-400" : "text-red-400"}`}>{stat.change}</span>
+                  <span className={`text-[10px] font-medium ${stat.positive ? "text-emerald-400" : "text-amber-400"}`}>{stat.change}</span>
                 </div>
                 <div className="flex items-baseline gap-1">
                   <span className="text-2xl font-heading font-extrabold tabular-nums">{stat.value}</span>
@@ -81,29 +81,51 @@ export default function HomePage() {
         })}
       </div>
 
+      {/* Workflow pipeline — connected steps */}
+      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+        className="rounded-xl border border-border bg-card p-5">
+        <h2 className="font-heading font-semibold text-sm mb-4">Your Workflow Pipeline</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {[
+            { step: 1, label: "Ingest", desc: `${totalContent} items in library`, href: "/dashboard/content", icon: Upload, color: "bg-blue-500/10 text-blue-400 border-blue-500/20" },
+            { step: 2, label: "Analyze Gaps", desc: `${criticalItems.length} critical gaps found`, href: "/dashboard/analysis", icon: BarChart3, color: "bg-orange-500/10 text-orange-400 border-orange-500/20" },
+            { step: 3, label: "Generate", desc: `${lowScoreItems} items need content`, href: "/dashboard/content/generate", icon: Sparkles, color: "bg-purple-500/10 text-purple-400 border-purple-500/20" },
+            { step: 4, label: "Publish", desc: "Publish to your CMS", href: "/dashboard/publish", icon: Send, color: "bg-green-500/10 text-green-400 border-green-500/20" },
+          ].map((s) => {
+            const Icon = s.icon;
+            return (
+              <Link key={s.step} to={s.href} className={`rounded-xl border p-4 hover:bg-accent/20 transition-colors group ${s.color}`}>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-xs font-bold">{s.step}.</span>
+                  <Icon className="h-4 w-4" />
+                </div>
+                <p className="text-sm font-semibold text-foreground">{s.label}</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">{s.desc}</p>
+              </Link>
+            );
+          })}
+        </div>
+        <p className="text-[10px] text-muted-foreground mt-3">
+          💡 Click any content item in the sidebar explorer to open its individual pipeline (Content → Analyze → Generate → Edit → Publish)
+        </p>
+      </motion.div>
+
       {/* Score + Quick Actions */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}
-          className="bento-card flex flex-col items-center py-8"
-        >
+        <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.15 }}
+          className="bento-card flex flex-col items-center py-8">
           <h2 className="font-heading font-semibold text-sm mb-5">AI Visibility Score</h2>
           <ScoreRing score={avgScore} size={180} />
-          <p className="text-xs text-muted-foreground mt-5 text-center">
-            You appear in <strong className="text-foreground">18%</strong> of AI-generated answers
-          </p>
           <Link to="/dashboard/analysis" className="mt-4 inline-flex items-center gap-1 text-xs text-primary hover:underline font-medium">
             Full analysis <ArrowRight className="h-3 w-3" />
           </Link>
         </motion.div>
 
-        <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.15 }}
-          className="lg:col-span-2 space-y-3"
-        >
-          {/* Quick actions — each links to the relevant feature */}
+        <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2 }}
+          className="lg:col-span-2 space-y-3">
           {[
             { title: "Run LLM Simulation", description: "Test how AI models respond to queries about your product", icon: Brain, href: "/dashboard/simulation", cta: "Run simulation" },
             { title: "Analyze Competitors", description: "See your share of voice vs competitors across AI engines", icon: Swords, href: "/dashboard/competitive", cta: "View competitive" },
-            { title: "Generate Content", description: "Create AI-optimized articles, FAQs, and comparisons", icon: Zap, href: "/dashboard/content/generate", cta: "Generate" },
             { title: "Discover Prompts", description: "Find prompts users ask AI about your category", icon: Sparkles, href: "/dashboard/prompts", cta: "View prompts" },
           ].map((action) => {
             const Icon = action.icon;
@@ -123,61 +145,6 @@ export default function HomePage() {
             );
           })}
         </motion.div>
-      </div>
-
-      {/* Products */}
-      <div>
-        <h2 className="font-heading font-semibold text-sm mb-3 flex items-center gap-2">
-          <Package2 className="h-4 w-4 text-muted-foreground" /> Your Products
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {MOCK_PRODUCTS.map((product, i) => {
-            const stats = getProductStats(product.id)!;
-            const allItems = product.folders.flatMap((f) => f.items);
-            const criticalCount = allItems.filter((item) => { const a = CONTENT_ANALYSIS[item.id]; return a?.gaps.some((g) => g.severity === "critical"); }).length;
-            return (
-              <motion.div key={product.id} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 + i * 0.06 }} className="bento-card">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-2.5">
-                    <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center border border-primary/10">
-                      <Package2 className="h-3.5 w-3.5 text-primary" />
-                    </div>
-                    <div>
-                      <h3 className="font-heading font-bold text-sm">{product.name}</h3>
-                      <p className="text-[10px] text-muted-foreground">{product.category}</p>
-                    </div>
-                  </div>
-                  {stats.avgScore !== null && <ScoreBadge score={stats.avgScore} />}
-                </div>
-                <div className="space-y-1 mb-3">
-                  {product.folders.map((folder) => (
-                    <div key={folder.id} className="flex items-center gap-2 text-xs">
-                      <Folder className="h-3 w-3 text-muted-foreground/40 flex-shrink-0" />
-                      <span className="text-muted-foreground truncate">{folder.name}</span>
-                      <span className="text-[10px] bg-muted/50 rounded px-1.5 py-0.5 ml-auto tabular-nums font-mono text-muted-foreground/60">{folder.items.length}</span>
-                    </div>
-                  ))}
-                </div>
-                <div className="flex items-center gap-4 text-[10px] text-muted-foreground border-t border-border pt-3">
-                  <span className="flex items-center gap-1"><CheckCircle2 className="h-3 w-3 text-emerald-400" />{stats.analyzed}/{stats.total}</span>
-                  {criticalCount > 0 && <span className="flex items-center gap-1 text-red-400"><AlertTriangle className="h-3 w-3" />{criticalCount} critical</span>}
-                  <Link to="/dashboard/content" className="ml-auto text-primary hover:underline">
-                    Ingest content →
-                  </Link>
-                </div>
-              </motion.div>
-            );
-          })}
-
-          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-            <Link to="/dashboard/projects"
-              className="rounded-xl border-2 border-dashed border-border/30 p-5 flex flex-col items-center justify-center gap-2 text-muted-foreground/30 hover:text-muted-foreground hover:border-primary/20 hover:bg-primary/[0.02] transition-all min-h-[160px]"
-            >
-              <Plus className="h-6 w-6" />
-              <p className="text-xs font-medium">Add Product</p>
-            </Link>
-          </motion.div>
-        </div>
       </div>
 
       {/* Needs attention */}
@@ -212,7 +179,7 @@ export default function HomePage() {
           <h2 className="font-heading font-semibold text-sm flex items-center gap-2">
             <Clock className="h-3.5 w-3.5 text-muted-foreground/50" /> Recently Analyzed
           </h2>
-          <Link to="/dashboard/content" className="text-xs text-primary hover:underline font-medium">View all</Link>
+          <Link to="/dashboard/content" className="text-xs text-primary hover:underline font-medium">View library</Link>
         </div>
         <div className="divide-y divide-border/40">
           {recentContent.map(({ product, folder, item }) => (
