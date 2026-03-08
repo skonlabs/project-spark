@@ -182,9 +182,22 @@ export default function GenerateContentPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-2xl font-heading font-bold tracking-tight">Content Generation</h1>
-        <p className="text-muted-foreground text-sm mt-0.5">Generate AI-optimized content that LLMs cite and recommend</p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-heading font-bold tracking-tight">Content Generation</h1>
+          <p className="text-muted-foreground text-sm mt-0.5">Generate AI-optimized content that LLMs cite and recommend</p>
+          {topicFromUrl && (
+            <p className="text-xs text-primary mt-1">Pre-filled topic: "{topicFromUrl}"</p>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <Link to="/dashboard/content" className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium hover:bg-accent/40 transition-colors">
+            Ingest existing content →
+          </Link>
+          <Link to="/dashboard/analysis" className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium hover:bg-accent/40 transition-colors">
+            Gap Analysis →
+          </Link>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
