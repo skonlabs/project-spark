@@ -141,7 +141,7 @@ export default function PromptsPage() {
                 {activeIntentMeta.icon}
               </div>
               <div>
-                <h2 className="font-bold text-sm" style={{ fontFamily: "'Space Grotesk'" }}>{activeIntentMeta.label}</h2>
+                <h2 className="font-heading font-bold text-sm">{activeIntentMeta.label}</h2>
                 <p className="text-[10px] text-muted-foreground">{activeIntentMeta.desc}</p>
               </div>
               <span className="ml-auto text-[10px] text-muted-foreground tabular-nums font-mono">{intentPrompts.length} prompts</span>
