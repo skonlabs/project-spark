@@ -5,19 +5,10 @@ import Landing from "./pages/Landing";
 import LoginPage from "./pages/auth/Login";
 import RegisterPage from "./pages/auth/Register";
 import DashboardLayout from "./components/layout/DashboardLayout";
-import OverviewPage from "./pages/dashboard/Overview";
-import AnalysisPage from "./pages/dashboard/Analysis";
-import SimulationPage from "./pages/dashboard/Simulation";
+import HomePage from "./pages/dashboard/Home";
+import ContentDetailPage from "./pages/dashboard/ContentDetail";
 import CompetitivePage from "./pages/dashboard/Competitive";
-import TopicsPage from "./pages/dashboard/Topics";
-import ContentPage from "./pages/dashboard/Content";
-import MonitoringPage from "./pages/dashboard/Monitoring";
-import GenerateContentPage from "./pages/dashboard/GenerateContent";
-import PromptsPage from "./pages/dashboard/Prompts";
-import ProjectsPage from "./pages/dashboard/Projects";
 import SettingsPage from "./pages/dashboard/Settings";
-import AgentPage from "./pages/dashboard/Agent";
-import PublishPage from "./pages/dashboard/Publish";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -50,18 +41,9 @@ const App = () => (
         <Route path="/auth/login" element={<LoginPage />} />
         <Route path="/auth/register" element={<RegisterPage />} />
         <Route path="/dashboard" element={<DashboardLayout />}>
-          <Route index element={<OverviewPage />} />
-          <Route path="analysis" element={<AnalysisPage />} />
-          <Route path="simulation" element={<SimulationPage />} />
+          <Route index element={<HomePage />} />
+          <Route path="content/:contentId" element={<ContentDetailPage />} />
           <Route path="competitive" element={<CompetitivePage />} />
-          <Route path="topics" element={<TopicsPage />} />
-          <Route path="prompts" element={<PromptsPage />} />
-          <Route path="monitoring" element={<MonitoringPage />} />
-          <Route path="content" element={<ContentPage />} />
-          <Route path="content/generate" element={<GenerateContentPage />} />
-          <Route path="publish" element={<PublishPage />} />
-          <Route path="agent" element={<AgentPage />} />
-          <Route path="projects" element={<ProjectsPage />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>
         <Route path="*" element={<NotFound />} />
