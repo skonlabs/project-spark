@@ -57,6 +57,13 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        gaeo: {
+          blue: "hsl(var(--gaeo-blue))",
+          purple: "hsl(var(--gaeo-purple))",
+          green: "hsl(var(--gaeo-green))",
+          orange: "hsl(var(--gaeo-orange))",
+          red: "hsl(var(--gaeo-red))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
