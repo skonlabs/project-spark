@@ -2,7 +2,7 @@
 # GAEO Platform — Makefile
 # ─────────────────────────────────────────────────────────────────
 
-.PHONY: help up down dev migrate seed clean logs test api-shell
+.PHONY: help up down dev migrate seed clean logs
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -12,8 +12,6 @@ help: ## Show this help
 up: ## Start all services
 	docker-compose up -d
 	@echo "✓ Platform running at http://localhost:3000"
-	@echo "✓ API docs at http://localhost:8000/docs"
-	@echo "✓ Celery Flower at http://localhost:5555"
 	@echo "✓ MinIO console at http://localhost:9001"
 
 down: ## Stop all services
@@ -28,57 +26,39 @@ rebuild: ## Rebuild and restart all services
 logs: ## Follow logs for all services
 	docker-compose logs -f
 
-logs-api: ## Follow API logs
-	docker-compose logs -f api
-
-logs-worker: ## Follow Celery worker logs
-	docker-compose logs -f celery_worker
+logs-web: ## Follow web logs
+	docker-compose logs -f web
 
 # ─── Database ─────────────────────────────────────────────────────
 
-migrate: ## Run database migrations
-	docker-compose exec api alembic upgrade head
+migrate: ## Run Prisma migrations
+	cd apps/web && npx prisma migrate deploy
 
-migrate-down: ## Rollback last migration
-	docker-compose exec api alembic downgrade -1
+db-push: ## Push Prisma schema to database (dev)
+	cd apps/web && npx prisma db push
 
-migration: ## Create a new migration (usage: make migration name="description")
-	docker-compose exec api alembic revision --autogenerate -m "$(name)"
+db-studio: ## Open Prisma Studio
+	cd apps/web && npx prisma studio
+
+db-generate: ## Generate Prisma client
+	cd apps/web && npx prisma generate
 
 seed: ## Seed database with demo data
-	docker-compose exec api python -m app.core.seed
+	cd apps/web && npm run db:seed
 
 # ─── Development ──────────────────────────────────────────────────
 
-dev-api: ## Run API in development mode (without Docker)
-	cd apps/api && uvicorn app.main:app --reload --port 8000
-
-dev-web: ## Run web app in development mode (without Docker)
+dev: ## Run web app in development mode
 	cd apps/web && npm run dev
 
-dev-worker: ## Run Celery worker in development mode
-	cd apps/api && celery -A app.workers.celery_app worker --loglevel=info
-
-# ─── Testing ──────────────────────────────────────────────────────
-
-test: ## Run all tests
-	docker-compose exec api pytest
-
-test-api: ## Run API tests only
-	docker-compose exec api pytest apps/api/tests/
+install: ## Install web dependencies
+	cd apps/web && npm install
 
 # ─── Utilities ────────────────────────────────────────────────────
-
-api-shell: ## Open Python shell in API container
-	docker-compose exec api python
 
 clean: ## Remove all containers and volumes (WARNING: destroys data)
 	docker-compose down -v
 	docker system prune -f
 
-install-web: ## Install web dependencies
-	cd apps/web && npm install
-
 format: ## Format code
-	cd apps/api && black . && isort .
 	cd apps/web && npx prettier --write "src/**/*.{ts,tsx}"
