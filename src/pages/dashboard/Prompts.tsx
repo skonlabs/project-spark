@@ -119,7 +119,7 @@ export default function PromptsPage() {
   function handleDiscover() {
     setIsDiscovering(true);
     setTimeout(() => {
-      addPromptsToProduct(PRODUCT_ID, DISCOVERED_PROMPTS);
+      addPromptsToProduct(PRODUCT_ID, DISCOVERED_PROMPTS.map(p => ({ ...p, covered: false })));
       setIsDiscovering(false);
       forceUpdate((n) => n + 1);
       toast.success(`${DISCOVERED_PROMPTS.length} new prompts discovered from your content!`);
