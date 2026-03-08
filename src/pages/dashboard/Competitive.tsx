@@ -11,6 +11,7 @@ import {
 import { Loader2, Plus, Swords } from "lucide-react";
 import toast from "react-hot-toast";
 
+
 const DEMO_COMPETITORS = [
   { name: "Your Product", share: 12, rank: 4.2, sentiment: 0.6, isYou: true },
   { name: "CompetitorAlpha", share: 35, rank: 1.8, sentiment: 0.7, isYou: false },
@@ -25,6 +26,31 @@ const YOU_COLOR = "#3b82f6";
 export default function CompetitivePage() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [newCompetitor, setNewCompetitor] = useState({ name: "", website_url: "" });
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [competitors, setCompetitors] = useState(DEMO_COMPETITORS);
+
+  function handleRunAnalysis() {
+    setIsAnalyzing(true);
+    toast.success("Running competitive analysis across all LLMs...");
+    setTimeout(() => {
+      setIsAnalyzing(false);
+      toast.success("Analysis complete — share of voice updated!");
+    }, 2500);
+  }
+
+  function handleAddCompetitor() {
+    if (!newCompetitor.name) return;
+    setCompetitors((prev) => [...prev, {
+      name: newCompetitor.name,
+      share: Math.floor(Math.random() * 15) + 3,
+      rank: parseFloat((Math.random() * 3 + 3).toFixed(1)),
+      sentiment: parseFloat((Math.random() * 0.4 + 0.3).toFixed(1)),
+      isYou: false,
+    }]);
+    toast.success(`Competitor "${newCompetitor.name}" added!`);
+    setNewCompetitor({ name: "", website_url: "" });
+    setShowAddForm(false);
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -34,8 +60,9 @@ export default function CompetitivePage() {
           <p className="text-muted-foreground text-sm mt-0.5">LLM share of voice across you and your competitors</p>
         </div>
         <div className="flex items-center gap-2">
-          <button className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm hover:bg-accent transition-colors">
-            <Swords className="h-4 w-4" /> Run Analysis
+          <button onClick={handleRunAnalysis} disabled={isAnalyzing} className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm hover:bg-accent transition-colors disabled:opacity-60">
+            {isAnalyzing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Swords className="h-4 w-4" />}
+            {isAnalyzing ? "Analyzing..." : "Run Analysis"}
           </button>
           <button onClick={() => setShowAddForm(!showAddForm)} className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors">
             <Plus className="h-4 w-4" /> Add Competitor
@@ -49,7 +76,7 @@ export default function CompetitivePage() {
           <div className="flex gap-3">
             <input value={newCompetitor.name} onChange={(e) => setNewCompetitor({ ...newCompetitor, name: e.target.value })} placeholder="Competitor name" className="flex-1 rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring" />
             <input value={newCompetitor.website_url} onChange={(e) => setNewCompetitor({ ...newCompetitor, website_url: e.target.value })} placeholder="Website URL (optional)" className="flex-1 rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring" />
-            <button disabled={!newCompetitor.name} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60 transition-colors">Add</button>
+            <button onClick={handleAddCompetitor} disabled={!newCompetitor.name} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60 transition-colors">Add</button>
           </div>
         </div>
       )}
@@ -58,12 +85,12 @@ export default function CompetitivePage() {
         <div className="rounded-xl border border-border bg-card p-6">
           <h2 className="font-semibold mb-4">LLM Share of Voice</h2>
           <ResponsiveContainer width="100%" height={240}>
-            <BarChart data={DEMO_COMPETITORS} margin={{ top: 0, right: 0, bottom: 0, left: -20 }}>
+            <BarChart data={competitors} margin={{ top: 0, right: 0, bottom: 0, left: -20 }}>
               <XAxis dataKey="name" tick={{ fontSize: 11, fill: "hsl(215 20.2% 65.1%)" }} tickLine={false} axisLine={false} />
               <YAxis tick={{ fontSize: 11, fill: "hsl(215 20.2% 65.1%)" }} tickLine={false} axisLine={false} tickFormatter={(v) => `${v}%`} />
               <Tooltip contentStyle={{ background: "hsl(222.2 84% 4.9%)", border: "1px solid hsl(217.2 32.6% 17.5%)", borderRadius: "8px", fontSize: "12px" }} formatter={(value: number) => [`${value}%`, "Share of Voice"]} />
               <Bar dataKey="share" radius={[4, 4, 0, 0]}>
-                {DEMO_COMPETITORS.map((entry, i) => (
+                {competitors.map((entry, i) => (
                   <Cell key={i} fill={entry.isYou ? YOU_COLOR : COLORS[i % COLORS.length]} opacity={entry.isYou ? 1 : 0.6} />
                 ))}
               </Bar>
@@ -74,7 +101,7 @@ export default function CompetitivePage() {
         <div className="rounded-xl border border-border bg-card p-6">
           <h2 className="font-semibold mb-4">Detailed Breakdown</h2>
           <div className="space-y-3">
-            {DEMO_COMPETITORS.map((comp, i) => (
+            {competitors.map((comp, i) => (
               <div key={comp.name} className={`flex items-center gap-3 rounded-lg p-3 ${comp.isYou ? "bg-primary/10 border border-primary/30" : "hover:bg-accent/50"} transition-colors`}>
                 <div className="h-3 w-3 rounded-full flex-shrink-0" style={{ background: comp.isYou ? YOU_COLOR : COLORS[i % COLORS.length] }} />
                 <span className={`flex-1 text-sm font-medium ${comp.isYou ? "text-primary" : ""}`}>

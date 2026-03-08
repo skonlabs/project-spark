@@ -22,7 +22,7 @@ export default function OverviewPage() {
           <h1 className="text-2xl font-bold">AI Visibility Overview</h1>
           <p className="text-muted-foreground text-sm mt-0.5">Your AI Engine Optimization command center</p>
         </div>
-        <Link to="/dashboard/projects/new" className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors">
+        <Link to="/dashboard/projects" className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors">
           <Plus className="h-4 w-4" /> New Project
         </Link>
       </div>
