@@ -147,7 +147,7 @@ export default function AnalysisPage() {
         <div>
           <h1 className="text-2xl font-heading font-bold tracking-tight">Gap Analysis</h1>
           <p className="text-muted-foreground text-sm mt-0.5">
-            AI visibility gaps and coverage for a specific product
+            Analyze AI visibility gaps using <strong>Prompts</strong> + <strong>Original Content</strong>
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
@@ -174,21 +174,51 @@ export default function AnalysisPage() {
         </div>
       </div>
 
-      {/* Connected features bar */}
+      {/* How Gap Analysis works */}
+      <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">How Gap Analysis Works</p>
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2">
+            <FileText className="h-4 w-4 text-primary" />
+            <div>
+              <p className="text-xs font-medium">Ingested Content</p>
+              <p className="text-[10px] text-muted-foreground">{selectedProduct?.folders.reduce((s, f) => s + f.items.length, 0)} items in library</p>
+            </div>
+          </div>
+          <span className="text-muted-foreground text-lg">+</span>
+          <div className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2">
+            <MessageSquare className="h-4 w-4 text-primary" />
+            <div>
+              <p className="text-xs font-medium">Prompt Database</p>
+              <p className="text-[10px] text-muted-foreground">{getProductPrompts(selectedProductId).length} tracked prompts</p>
+            </div>
+          </div>
+          <span className="text-muted-foreground text-lg">=</span>
+          <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/10 px-3 py-2">
+            <AlertCircle className="h-4 w-4 text-primary" />
+            <div>
+              <p className="text-xs font-medium text-primary">Visibility Gaps</p>
+              <p className="text-[10px] text-muted-foreground">Content that's missing or weak for user prompts</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Workflow hint */}
       <div className="rounded-xl border border-border bg-card/50 p-4 flex flex-wrap items-center gap-3">
-        <span className="text-xs font-medium text-muted-foreground">Related:</span>
-        <Link to="/dashboard/prompts" className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium hover:bg-accent/40 hover:border-primary/30 transition-colors">
-          <MessageSquare className="h-3 w-3 text-primary" /> Prompt Database
+        <span className="text-xs font-medium text-muted-foreground">Workflow:</span>
+        <Link to="/dashboard/content" className="inline-flex items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary transition-colors">
+          1. Ingest <ChevronRight className="h-2.5 w-2.5" />
         </Link>
-        <Link to="/dashboard/simulation" className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium hover:bg-accent/40 hover:border-primary/30 transition-colors">
-          <Brain className="h-3 w-3 text-primary" /> Simulation
+        <span className="inline-flex items-center gap-1.5 rounded-lg border border-primary/50 bg-primary/20 px-3 py-1.5 text-xs font-bold text-primary">
+          2. Analyze Gaps (you are here)
+        </span>
+        <Link to="/dashboard/content/generate" className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium hover:bg-accent/40 transition-colors">
+          3. Generate <ChevronRight className="h-2.5 w-2.5" />
         </Link>
-        <Link to="/dashboard/topics" className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium hover:bg-accent/40 hover:border-primary/30 transition-colors">
-          <FileText className="h-3 w-3 text-primary" /> Topic Map
-        </Link>
-        <Link to="/dashboard/content" className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium hover:bg-accent/40 hover:border-primary/30 transition-colors">
-          <Plus className="h-3 w-3 text-primary" /> Ingest Content
-        </Link>
+        <span className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs text-muted-foreground">
+          4. Edit → Publish
+        </span>
       </div>
 
       {/* Product context banner */}
