@@ -13,6 +13,11 @@ import TopicsPage from "./pages/dashboard/Topics";
 import ContentPage from "./pages/dashboard/Content";
 import MonitoringPage from "./pages/dashboard/Monitoring";
 import GenerateContentPage from "./pages/dashboard/GenerateContent";
+import PromptsPage from "./pages/dashboard/Prompts";
+import ProjectsPage from "./pages/dashboard/Projects";
+import SettingsPage from "./pages/dashboard/Settings";
+import AgentPage from "./pages/dashboard/Agent";
+import PublishPage from "./pages/dashboard/Publish";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -50,9 +55,14 @@ const App = () => (
           <Route path="simulation" element={<SimulationPage />} />
           <Route path="competitive" element={<CompetitivePage />} />
           <Route path="topics" element={<TopicsPage />} />
+          <Route path="prompts" element={<PromptsPage />} />
+          <Route path="monitoring" element={<MonitoringPage />} />
           <Route path="content" element={<ContentPage />} />
           <Route path="content/generate" element={<GenerateContentPage />} />
-          <Route path="monitoring" element={<MonitoringPage />} />
+          <Route path="publish" element={<PublishPage />} />
+          <Route path="agent" element={<AgentPage />} />
+          <Route path="projects" element={<ProjectsPage />} />
+          <Route path="settings" element={<SettingsPage />} />
         </Route>
         <Route path="*" element={<NotFound />} />
       </Routes>
