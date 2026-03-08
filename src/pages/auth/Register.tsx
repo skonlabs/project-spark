@@ -25,31 +25,25 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen flex bg-background relative overflow-hidden">
-      {/* Left — branding panel */}
-      <div className="hidden lg:flex lg:w-1/2 relative items-center justify-center bg-mesh">
-        <div className="absolute inset-0 bg-dot-grid opacity-20" />
-        <div className="absolute top-1/3 left-1/4 w-80 h-80 rounded-full bg-violet-600/15 blur-[100px]" />
-        <div className="absolute bottom-1/3 right-1/3 w-64 h-64 rounded-full bg-blue-500/10 blur-[80px]" />
-        <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.7 }} className="relative max-w-md px-12">
-          <div className="flex items-center gap-3 mb-10">
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg shadow-primary/20">
-              <span className="text-white font-black text-sm">G</span>
+    <div className="min-h-screen flex bg-background">
+      {/* Left — branding */}
+      <div className="hidden lg:flex lg:w-1/2 relative items-center justify-center border-r border-border">
+        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5 }} className="max-w-sm px-12">
+          <div className="flex items-center gap-2 mb-8">
+            <div className="h-8 w-8 rounded-md bg-primary flex items-center justify-center">
+              <span className="text-primary-foreground font-bold text-sm">G</span>
             </div>
-            <span className="font-black text-2xl tracking-tight" style={{ fontFamily: "'Space Grotesk'" }}>GAEO</span>
+            <span className="font-heading font-bold text-xl tracking-tight">GAEO</span>
           </div>
-          <h2 className="text-3xl font-black tracking-tight mb-4 leading-tight" style={{ fontFamily: "'Space Grotesk'" }}>
-            Your brand in every
-            <br />
-            <span className="gradient-text">AI answer.</span>
+          <h2 className="text-2xl font-heading font-bold tracking-tight mb-3 leading-tight">
+            Your brand in every<br /><span className="text-primary">AI answer.</span>
           </h2>
-          <p className="text-muted-foreground leading-relaxed">Join hundreds of companies already optimizing their AI visibility.</p>
-
-          <div className="mt-10 grid grid-cols-3 gap-4">
+          <p className="text-muted-foreground text-sm leading-relaxed">Join hundreds of companies already optimizing their AI visibility.</p>
+          <div className="mt-8 grid grid-cols-3 gap-4">
             {[{ v: "42→78", l: "Score uplift" }, { v: "3.2×", l: "More citations" }, { v: "14 days", l: "To first results" }].map((s) => (
               <div key={s.l} className="text-center">
-                <div className="text-lg font-black gradient-text" style={{ fontFamily: "'Space Grotesk'" }}>{s.v}</div>
-                <div className="text-[10px] text-muted-foreground/60 mt-0.5">{s.l}</div>
+                <div className="text-base font-heading font-bold text-primary">{s.v}</div>
+                <div className="text-[10px] text-muted-foreground/50 mt-0.5">{s.l}</div>
               </div>
             ))}
           </div>
@@ -58,28 +52,28 @@ export default function RegisterPage() {
 
       {/* Right — form */}
       <div className="flex-1 flex items-center justify-center px-6">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="w-full max-w-sm">
-          <div className="lg:hidden flex items-center justify-center gap-2.5 mb-10">
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
-              <span className="text-white font-black text-sm">G</span>
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="w-full max-w-sm">
+          <div className="lg:hidden flex items-center justify-center gap-2 mb-8">
+            <div className="h-8 w-8 rounded-md bg-primary flex items-center justify-center">
+              <span className="text-primary-foreground font-bold text-sm">G</span>
             </div>
-            <span className="font-black text-2xl tracking-tight" style={{ fontFamily: "'Space Grotesk'" }}>GAEO</span>
+            <span className="font-heading font-bold text-xl tracking-tight">GAEO</span>
           </div>
 
-          <h1 className="text-2xl font-bold mb-1" style={{ fontFamily: "'Space Grotesk'" }}>Create your account</h1>
+          <h1 className="text-xl font-heading font-bold mb-1">Create your account</h1>
           <p className="text-muted-foreground text-sm mb-8">Start optimizing for AI discovery</p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="text-sm font-medium mb-2 block">Full name</label>
+              <label className="text-sm font-medium mb-1.5 block">Full name</label>
               <input type="text" required value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} className="input-field" placeholder="Jane Smith" />
             </div>
             <div>
-              <label className="text-sm font-medium mb-2 block">Email</label>
+              <label className="text-sm font-medium mb-1.5 block">Email</label>
               <input type="email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="input-field" placeholder="you@company.com" />
             </div>
             <div>
-              <label className="text-sm font-medium mb-2 block">Password</label>
+              <label className="text-sm font-medium mb-1.5 block">Password</label>
               <div className="relative">
                 <input type={showPassword ? "text" : "password"} required value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="input-field pr-10" placeholder="Min. 8 characters" />
                 <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
@@ -87,10 +81,9 @@ export default function RegisterPage() {
                 </button>
               </div>
             </div>
-            <button type="submit" disabled={loading} className="btn-primary w-full justify-center py-3 text-sm font-bold">
+            <button type="submit" disabled={loading} className="btn-primary w-full justify-center py-2.5 text-sm">
               {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-              Create account
-              <ArrowRight className="h-4 w-4" />
+              Create account <ArrowRight className="h-4 w-4" />
             </button>
           </form>
 
