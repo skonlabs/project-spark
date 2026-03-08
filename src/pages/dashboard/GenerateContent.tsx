@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import {
   BookOpen,
+  ChevronRight,
   Copy,
   Download,
   FileText,
@@ -192,20 +193,58 @@ export default function GenerateContentPage() {
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-heading font-bold tracking-tight">Content Generation</h1>
-          <p className="text-muted-foreground text-sm mt-0.5">Generate AI-optimized content that LLMs cite and recommend</p>
+          <p className="text-muted-foreground text-sm mt-0.5">Generate AI-optimized content using AI content guidelines</p>
           {topicFromUrl && (
             <p className="text-xs text-primary mt-1">Pre-filled topic: "{topicFromUrl}"</p>
           )}
         </div>
-        <div className="flex items-center gap-2">
-          <Link to="/dashboard/content" className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium hover:bg-accent/40 transition-colors">
-            Ingest existing content →
-          </Link>
-          <Link to="/dashboard/analysis" className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium hover:bg-accent/40 transition-colors">
-            Gap Analysis →
-          </Link>
+      </div>
+
+      {/* Workflow position */}
+      <div className="rounded-xl border border-border bg-card/50 p-4 flex flex-wrap items-center gap-3">
+        <span className="text-xs font-medium text-muted-foreground">Workflow:</span>
+        <Link to="/dashboard/content" className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium hover:bg-accent/40 transition-colors">
+          1. Ingest <ChevronRight className="h-2.5 w-2.5" />
+        </Link>
+        <Link to="/dashboard/analysis" className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium hover:bg-accent/40 transition-colors">
+          2. Analyze Gaps <ChevronRight className="h-2.5 w-2.5" />
+        </Link>
+        <span className="inline-flex items-center gap-1.5 rounded-lg border border-primary/50 bg-primary/20 px-3 py-1.5 text-xs font-bold text-primary">
+          3. Generate (you are here)
+        </span>
+        <span className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs text-muted-foreground">
+          4. Edit → Publish
+        </span>
+      </div>
+
+      {/* AI Content Guidelines */}
+      <div className="rounded-xl border border-primary/20 bg-primary/5 p-5">
+        <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
+          <Sparkles className="h-4 w-4 text-primary" /> AI Content Guidelines
+        </h3>
+        <p className="text-xs text-muted-foreground mb-3">
+          All generated content follows these principles — what AI-enabled content must contain to be cited by LLMs:
+        </p>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+          {[
+            { title: "Entity Definition", desc: 'Clear "X is Y" statement so LLMs know what you are' },
+            { title: "Structured Headings", desc: "H2/H3 hierarchy — LLMs parse structure to extract answers" },
+            { title: "FAQ Coverage", desc: "Q&A pairs matching user prompts — cited 3.2× more by LLMs" },
+            { title: "Comparison Tables", desc: 'Structured vs. alternatives — appears in "best tools" queries' },
+            { title: "Keyword Consistency", desc: "Natural repetition to build strong topic association" },
+            { title: "Educational Depth", desc: "Authoritative content — LLMs prefer depth over promotion" },
+          ].map((g) => (
+            <div key={g.title} className="rounded-lg border border-border bg-card p-3">
+              <p className="text-xs font-semibold mb-0.5">{g.title}</p>
+              <p className="text-[10px] text-muted-foreground leading-relaxed">{g.desc}</p>
+            </div>
+          ))}
         </div>
       </div>
+
+      <p className="text-xs text-muted-foreground">
+        💡 <strong>Tip:</strong> For the best results, first <Link to="/dashboard/content" className="text-primary hover:underline">ingest your existing content</Link>, then use the 5-step pipeline on any content item's detail page: Ingest → Analyze → Generate → Edit → Publish.
+      </p>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Left: Config */}

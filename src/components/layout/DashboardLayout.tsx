@@ -71,12 +71,13 @@ export default function DashboardLayout() {
 
   const navSections = [
     {
-      label: "Core",
+      label: "Workflow",
       links: [
         { to: "/dashboard", icon: LayoutDashboard, label: "Home", exact: true },
-        { to: "/dashboard/overview", icon: BarChart2, label: "Overview" },
-        { to: "/dashboard/content", icon: Upload, label: "Content" },
-        { to: "/dashboard/analysis", icon: BarChart2, label: "Analysis" },
+        { to: "/dashboard/content", icon: Upload, label: "1. Ingest" },
+        { to: "/dashboard/analysis", icon: BarChart2, label: "2. Analyze Gaps" },
+        { to: "/dashboard/content/generate", icon: Zap, label: "3. Generate" },
+        { to: "/dashboard/publish", icon: Send, label: "4. Publish" },
       ],
     },
     {
@@ -91,10 +92,9 @@ export default function DashboardLayout() {
     {
       label: "Manage",
       links: [
+        { to: "/dashboard/overview", icon: BarChart2, label: "Overview" },
         { to: "/dashboard/topics", icon: Globe, label: "Topics" },
         { to: "/dashboard/agent", icon: Bot, label: "AI Agent" },
-        { to: "/dashboard/content/generate", icon: Zap, label: "Generate" },
-        { to: "/dashboard/publish", icon: Send, label: "Publish" },
         { to: "/dashboard/projects", icon: Package2, label: "Projects" },
         { to: "/dashboard/settings", icon: Settings, label: "Settings" },
       ],

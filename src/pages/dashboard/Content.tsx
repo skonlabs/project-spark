@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useDropzone } from "react-dropzone";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import {
   FileText, Globe, Loader2, Upload, Link as LinkIcon,
   CheckCircle2, Clock, AlertCircle, Github, Database,
@@ -132,7 +132,24 @@ export default function ContentPage() {
     <div className="p-6 space-y-6">
       <div>
         <h1 className="text-2xl font-heading font-bold tracking-tight">Content Ingestion</h1>
-        <p className="text-muted-foreground text-sm mt-0.5">Import content from any source to analyse and optimise</p>
+        <p className="text-muted-foreground text-sm mt-0.5">Step 1 — Import content from any source, then analyze and optimize</p>
+      </div>
+
+      {/* Workflow position */}
+      <div className="rounded-xl border border-border bg-card/50 p-4 flex flex-wrap items-center gap-3">
+        <span className="text-xs font-medium text-muted-foreground">Workflow:</span>
+        <span className="inline-flex items-center gap-1.5 rounded-lg border border-primary/50 bg-primary/20 px-3 py-1.5 text-xs font-bold text-primary">
+          1. Ingest (you are here)
+        </span>
+        <Link to="/dashboard/analysis" className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium hover:bg-accent/40 transition-colors">
+          2. Analyze Gaps →
+        </Link>
+        <Link to="/dashboard/content/generate" className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium hover:bg-accent/40 transition-colors">
+          3. Generate →
+        </Link>
+        <span className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs text-muted-foreground">
+          4. Edit → Publish
+        </span>
       </div>
 
       {/* Target selector */}
