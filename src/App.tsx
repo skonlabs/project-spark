@@ -6,7 +6,10 @@ import LoginPage from "./pages/auth/Login";
 import RegisterPage from "./pages/auth/Register";
 import DashboardLayout from "./components/layout/DashboardLayout";
 import HomePage from "./pages/dashboard/Home";
+import ContentPage from "./pages/dashboard/Content";
 import ContentDetailPage from "./pages/dashboard/ContentDetail";
+import PromptsPage from "./pages/dashboard/Prompts";
+import AnalysisPage from "./pages/dashboard/Analysis";
 import CompetitivePage from "./pages/dashboard/Competitive";
 import SettingsPage from "./pages/dashboard/Settings";
 import NotFound from "./pages/NotFound";
@@ -42,7 +45,10 @@ const App = () => (
         <Route path="/auth/register" element={<RegisterPage />} />
         <Route path="/dashboard" element={<DashboardLayout />}>
           <Route index element={<HomePage />} />
+          <Route path="content" element={<ContentPage />} />
           <Route path="content/:contentId" element={<ContentDetailPage />} />
+          <Route path="prompts" element={<PromptsPage />} />
+          <Route path="analysis" element={<AnalysisPage />} />
           <Route path="competitive" element={<CompetitivePage />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>
