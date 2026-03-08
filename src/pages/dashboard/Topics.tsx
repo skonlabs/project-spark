@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { AlertCircle, CheckCircle2, RefreshCw } from "lucide-react";
+import { AlertCircle, CheckCircle2, Loader2, RefreshCw, Sparkles } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 
 const MOCK_NODES = [
   { id: "root", label: "AI Observability", depth: 0, covered: true, importance: 10, type: "core", x: 400, y: 300 },
@@ -29,6 +31,22 @@ const MOCK_EDGES = [
 export default function TopicsPage() {
   const [selectedNode, setSelectedNode] = useState<typeof MOCK_NODES[0] | null>(null);
   const [filter, setFilter] = useState<"all" | "covered" | "gaps">("all");
+  const [isRegenerating, setIsRegenerating] = useState(false);
+  const navigate = useNavigate();
+
+  function handleRegenerate() {
+    setIsRegenerating(true);
+    toast.success("Regenerating topic graph from your content...");
+    setTimeout(() => {
+      setIsRegenerating(false);
+      toast.success("Topic graph updated!");
+    }, 2000);
+  }
+
+  function handleCreateContent(topic: string) {
+    navigate("/dashboard/content/generate");
+    toast.success(`Opening content generator for: "${topic}"`);
+  }
 
   const filteredNodes = MOCK_NODES.filter((n) => {
     if (filter === "covered") return n.covered;
@@ -56,8 +74,9 @@ export default function TopicsPage() {
           <h1 className="text-2xl font-bold">Topic Ecosystem Map</h1>
           <p className="text-muted-foreground text-sm mt-0.5">Your content coverage across the AI Observability topic landscape</p>
         </div>
-        <button className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm hover:bg-accent transition-colors">
-          <RefreshCw className="h-4 w-4" /> Regenerate Graph
+        <button onClick={handleRegenerate} disabled={isRegenerating} className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm hover:bg-accent transition-colors disabled:opacity-60">
+          {isRegenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+          {isRegenerating ? "Regenerating..." : "Regenerate Graph"}
         </button>
       </div>
 
@@ -150,7 +169,13 @@ export default function TopicsPage() {
           {!selectedNode.covered && (
             <div className="mt-3 pt-3 border-t border-border">
               <p className="text-sm font-medium mb-1">Action needed:</p>
-              <p className="text-sm text-muted-foreground">Create content covering "{selectedNode.label}" to fill this gap.</p>
+              <p className="text-sm text-muted-foreground mb-3">Create content covering "{selectedNode.label}" to fill this gap and improve your AI Visibility Score.</p>
+              <button
+                onClick={() => handleCreateContent(selectedNode.label)}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+              >
+                <Sparkles className="h-4 w-4" /> Generate Content for This Topic
+              </button>
             </div>
           )}
         </div>
