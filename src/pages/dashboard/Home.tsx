@@ -85,12 +85,13 @@ export default function HomePage() {
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
         className="rounded-xl border border-border bg-card p-5">
         <h2 className="font-heading font-semibold text-sm mb-4">Your Workflow Pipeline</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           {[
             { step: 1, label: "Ingest", desc: `${totalContent} items in library`, href: "/dashboard/content", icon: Upload, color: "bg-blue-500/10 text-blue-400 border-blue-500/20" },
             { step: 2, label: "Analyze Gaps", desc: `${criticalItems.length} critical gaps found`, href: "/dashboard/analysis", icon: BarChart3, color: "bg-orange-500/10 text-orange-400 border-orange-500/20" },
             { step: 3, label: "Generate", desc: `${lowScoreItems} items need content`, href: "/dashboard/content/generate", icon: Sparkles, color: "bg-purple-500/10 text-purple-400 border-purple-500/20" },
-            { step: 4, label: "Publish", desc: "Publish to your CMS", href: "/dashboard/publish", icon: Send, color: "bg-green-500/10 text-green-400 border-green-500/20" },
+            { step: 4, label: "Edit", desc: "Review & refine content", href: "/dashboard/content", icon: FileText, color: "bg-cyan-500/10 text-cyan-400 border-cyan-500/20" },
+            { step: 5, label: "Publish", desc: "Publish to your CMS", href: "/dashboard/publish", icon: Send, color: "bg-green-500/10 text-green-400 border-green-500/20" },
           ].map((s) => {
             const Icon = s.icon;
             return (
