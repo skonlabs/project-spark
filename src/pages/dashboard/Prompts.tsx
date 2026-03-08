@@ -91,7 +91,7 @@ export default function PromptsPage() {
           <motion.div key={stat.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
             className={`bento-card text-center bg-gradient-to-br ${stat.gradient}`}
           >
-            <p className="text-3xl font-black tabular-nums" style={{ fontFamily: "'Space Grotesk'" }}>{stat.value}</p>
+            <p className="text-3xl font-heading font-black tabular-nums">{stat.value}</p>
             <p className="text-[10px] text-muted-foreground mt-1 font-medium uppercase tracking-wider">{stat.label}</p>
           </motion.div>
         ))}
