@@ -220,7 +220,7 @@ export default function ContentDetailPage() {
 
   // Prompts tab state
   const [isGeneratingPrompts, setIsGeneratingPrompts] = useState(false);
-  const [generatedPrompts, setGeneratedPrompts] = useState<typeof DEMO_GENERATED_PROMPTS | null>(null);
+  const [generatedPrompts, setGeneratedPrompts] = useState<GeneratedPrompt[] | null>(null);
   const [selectedPrompts, setSelectedPrompts] = useState<Set<string>>(new Set());
 
   // Generate state
