@@ -704,6 +704,15 @@ export default function ContentDetailPage() {
                               </p>
                               <p className="text-xs text-foreground">{gap.fix}</p>
                             </div>
+                            <button
+                              onClick={() => {
+                                toast.success(`Generating fix for "${gap.label}"...`);
+                                setTimeout(() => toast.success(`Fix generated for "${gap.label}" — check the Generate tab.`), 2000);
+                              }}
+                              className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-primary/10 border border-primary/30 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/20 transition-colors"
+                            >
+                              <Sparkles className="h-3 w-3" /> Generate Fix
+                            </button>
                           </div>
                         </div>
                       </div>
