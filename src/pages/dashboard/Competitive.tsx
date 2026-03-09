@@ -63,7 +63,7 @@ export default function CompetitivePage() {
           <button onClick={() => setShowAddForm(true)} className="inline-flex items-center gap-2 rounded-xl border border-border/60 px-4 py-2.5 text-sm font-medium hover:bg-accent transition-all">
             <Plus className="h-4 w-4" /> Add Competitor
           </button>
-          <button onClick={handleRunAnalysis} disabled={isAnalyzing} className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 px-5 py-2.5 text-sm font-bold text-white hover:opacity-90 disabled:opacity-60 transition-all shadow-lg shadow-primary/20">
+          <button onClick={handleRunAnalysis} disabled={isAnalyzing} className="btn-primary rounded-xl px-5 py-2.5 text-sm font-bold disabled:opacity-60 transition-all">
             {isAnalyzing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Swords className="h-4 w-4" />}
             {isAnalyzing ? "Analyzing…" : "Run Analysis"}
           </button>
