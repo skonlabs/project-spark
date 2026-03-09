@@ -634,13 +634,25 @@ export default function ContentPage() {
             
             <div className="space-y-4">
               <div>
-                <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Product</label>
+                <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Parent Folder</label>
                 <select
-                  value={newFolderProductId}
-                  onChange={(e) => setNewFolderProductId(e.target.value)}
+                  value={`${newFolderProductId}::root`}
+                  onChange={(e) => {
+                    const [pId] = e.target.value.split("::");
+                    setNewFolderProductId(pId);
+                  }}
                   className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
                 >
-                  {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                  {products.map((p) => (
+                    <optgroup key={p.id} label={p.name}>
+                      <option value={`${p.id}::root`}>{p.name} (root)</option>
+                      {p.folders.map((f) => (
+                        <option key={f.id} value={`${p.id}::${f.id}`}>
+                          {p.name} / {f.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  ))}
                 </select>
               </div>
               
