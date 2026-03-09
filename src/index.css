@@ -88,12 +88,12 @@
 
   /* ── Cards ────────────────────────────────────── */
   .bento-card {
-    @apply rounded-xl border border-border p-5 transition-all duration-200;
+    @apply rounded-lg border border-border p-5 transition-all duration-200;
     background: hsl(var(--card));
   }
   .bento-card:hover {
-    border-color: hsl(var(--primary) / 0.18);
-    box-shadow: 0 0 0 1px hsl(var(--primary) / 0.05);
+    border-color: hsl(var(--primary) / 0.22);
+    box-shadow: 0 0 20px -8px hsl(var(--primary) / 0.08);
   }
 
   .section-card {
