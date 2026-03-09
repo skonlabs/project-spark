@@ -179,12 +179,11 @@ export default function ContentPage() {
   }
 
   // ── Ingest handler ────────────────────────────────────────────────────────
-  function ingest(title: string, url: string, sourceType: "url" | "file" | "crawl") {
+  async function ingest(title: string, url: string, sourceType: "url" | "file" | "crawl") {
     if (!selectedProduct || !selectedFolder) { toast.error("Select a product and folder first."); return; }
-    const itemId = addContentItem({
+    const itemId = await addContentItem({
       productId: selectedProduct.id, folderId: selectedFolder.id, title, url, source_type: sourceType,
     });
-    setTimeout(() => updateItemStatus(itemId, "analyzed", Math.floor(Math.random() * 40) + 35), 3000 + Math.random() * 2000);
     return itemId;
   }
 

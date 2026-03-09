@@ -70,7 +70,7 @@ const PUBLISH_PLATFORMS = [
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-function GapBadge({ severity }: { severity: GapSeverity }) {
+function GapBadge({ severity }: { severity: string }) {
   const styles: Record<GapSeverity, string> = {
     critical: "bg-red-500/15 text-red-400 border-red-500/30",
     high: "bg-orange-500/15 text-orange-400 border-orange-500/30",
