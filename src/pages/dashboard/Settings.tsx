@@ -301,7 +301,7 @@ export default function SettingsPage() {
                   </div>
                 ))}
               </div>
-              <button onClick={() => toast.success("Preferences saved!")} className="rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 px-6 py-2.5 text-sm font-bold text-white shadow-md shadow-primary/20">Save Preferences</button>
+              <button onClick={() => toast.success("Preferences saved!")} className="btn-primary rounded-xl px-6 py-2.5 text-sm font-bold">Save Preferences</button>
             </div>
           )}
         </div>
