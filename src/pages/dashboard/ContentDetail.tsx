@@ -279,20 +279,37 @@ export default function ContentDetailPage() {
     }, 2000);
   }
 
-  function handleGenerate() {
+  async function handleGenerate() {
     setIsGenerating(true);
-    setTimeout(() => {
-      const content = buildGeneratedContent(
-        item.title,
-        product.name,
-        product.category,
-        intent,
-        enhancements
-      );
-      setGeneratedContent(content);
-      setIsGenerating(false);
+    try {
+      const analysis = getAnalysis(item.id);
+      const { data, error } = await supabase.functions.invoke("generate-content", {
+        body: {
+          title: item.title,
+          originalContent: item.raw_content ?? "",
+          productName: product.name,
+          productCategory: product.category,
+          intent,
+          tone,
+          targetLlm,
+          enhancements,
+          gaps: analysis?.gaps ?? [],
+          dimensionScores: analysis?.dimension_scores ?? [],
+        },
+      });
+      if (error) throw error;
+      if (data?.error) {
+        toast.error(data.error);
+        return;
+      }
+      setGeneratedContent(data.content);
       toast.success("AI-enhanced content generated!");
-    }, 2200);
+    } catch (err: any) {
+      console.error("Generate content error:", err);
+      toast.error("Failed to generate content. Please try again.");
+    } finally {
+      setIsGenerating(false);
+    }
   }
 
   function handleUseGenerated() {
