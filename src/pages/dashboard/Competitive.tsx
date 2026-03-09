@@ -101,7 +101,7 @@ export default function CompetitivePage() {
       </div>
 
       <div className="section-card p-6">
-        <h2 className="font-bold mb-5 text-sm">AI Share of Voice — {MOCK_PRODUCTS.find((p) => p.id === selectedProduct)?.name}</h2>
+        <h2 className="font-bold mb-5 text-sm">AI Share of Voice — {products.find((p) => p.id === selectedProduct)?.name}</h2>
         <ResponsiveContainer width="100%" height={220}>
           <BarChart data={list} margin={{ top: 0, right: 0, bottom: 0, left: -20 }}>
             <XAxis dataKey="name" tick={{ fontSize: 11, fill: "hsl(215 20.2% 55%)" }} axisLine={false} tickLine={false} />
