@@ -105,7 +105,7 @@ export default function CompetitivePage() {
           <BarChart data={list} margin={{ top: 0, right: 0, bottom: 0, left: -20 }}>
             <XAxis dataKey="name" tick={{ fontSize: 11, fill: "hsl(215 20.2% 55%)" }} axisLine={false} tickLine={false} />
             <YAxis tick={{ fontSize: 11, fill: "hsl(215 20.2% 55%)" }} axisLine={false} tickLine={false} />
-            <Tooltip formatter={(v: number) => [`${v}%`, "Share of Voice"]} contentStyle={{ background: "hsl(228 14% 7%)", border: "1px solid hsl(217 20% 16%)", borderRadius: "12px", fontSize: "12px" }} />
+            <Tooltip formatter={(v: number) => [`${v}%`, "Share of Voice"]} contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "12px", fontSize: "12px" }} />
             <Bar dataKey="share" radius={[6, 6, 0, 0]}>
               {list.map((entry, i) => <Cell key={i} fill={entry.isYou ? "#6366f1" : COLORS[Math.min(i, COLORS.length - 1)]} />)}
             </Bar>
