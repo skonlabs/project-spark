@@ -295,24 +295,18 @@ export default function ContentPage() {
 
           {/* Parent folder picker */}
           <div>
-            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Parent Folder</label>
-            <select
-              value={`${selectedProductId}::${selectedFolderId}`}
-              onChange={(e) => {
-                const [pId, fId] = e.target.value.split("::");
+            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Destination Folder</label>
+            <FolderPicker
+              products={products}
+              selectedProductId={selectedProductId}
+              selectedFolderId={selectedFolderId}
+              onSelect={(pId, fId) => {
                 setSelectedProductId(pId);
-                setSelectedFolderId(fId);
+                setSelectedFolderId(fId ?? products.find(p => p.id === pId)?.folders[0]?.id ?? "");
               }}
-              className="w-full max-w-sm rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
-            >
-              {products.map((p) =>
-                p.folders.map((f) => (
-                  <option key={f.id} value={`${p.id}::${f.id}`}>
-                    {p.name} / {f.name}
-                  </option>
-                ))
-              )}
-            </select>
+              placeholder="Select destination folder..."
+              className="max-w-sm"
+            />
           </div>
 
           {/* Method tabs */}
