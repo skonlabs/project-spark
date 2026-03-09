@@ -211,8 +211,8 @@ export default function AgentPage() {
                     <span className={`text-xs font-medium ${impactColor[suggestion.impact]}`}>{suggestion.impact} impact</span>
                     <span className="text-xs text-muted-foreground">·</span>
                     <span className={`text-xs ${effortColor[suggestion.effort]}`}>{suggestion.effort} effort</span>
-                    {suggestion.status === "completed" && <CheckCircle2 className="h-3.5 w-3.5 text-green-400" />}
-                    {suggestion.status === "in_progress" && <Clock className="h-3.5 w-3.5 text-yellow-400 animate-pulse" />}
+                    {suggestion.status === "completed" && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />}
+                    {suggestion.status === "in_progress" && <Clock className="h-3.5 w-3.5 text-amber-500 animate-pulse" />}
                   </div>
                   <p className="font-medium text-sm">{suggestion.title}</p>
                 </div>
