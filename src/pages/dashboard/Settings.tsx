@@ -101,7 +101,7 @@ export default function SettingsPage() {
                   <option>UTC</option><option>America/New_York</option><option>America/Los_Angeles</option><option>Europe/London</option><option>Asia/Tokyo</option>
                 </select>
               </div>
-              <button onClick={() => toast.success("Settings saved!")} className="rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 px-6 py-2.5 text-sm font-bold text-white shadow-md shadow-primary/20">Save Changes</button>
+              <button onClick={() => toast.success("Settings saved!")} className="btn-primary rounded-xl px-6 py-2.5 text-sm font-bold">Save Changes</button>
             </div>
           )}
 
