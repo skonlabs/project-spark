@@ -188,15 +188,17 @@ export function ContentProvider({ children }: { children: ReactNode }) {
 
   // Fetch content from URL using a CORS proxy
   async function fetchUrlContent(url: string): Promise<string | null> {
-    try {
-      // Use allorigins.win as a CORS proxy
-      const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
-      const response = await fetch(proxyUrl);
-      
-      if (!response.ok) {
-        console.error("Failed to fetch URL:", response.status);
-        return `# Content from ${url}\n\nUnable to fetch content automatically. The URL may be protected or unavailable.\n\nPlease copy and paste the content manually, or try a different URL.`;
-      }
+    const proxies = [
+      `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+      `https://corsproxy.io/?${encodeURIComponent(url)}`,
+    ];
+    for (const proxyUrl of proxies) {
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 8000);
+        const response = await fetch(proxyUrl, { signal: controller.signal });
+        clearTimeout(timeout);
+        if (!response.ok) continue;
       
       const html = await response.text();
       
