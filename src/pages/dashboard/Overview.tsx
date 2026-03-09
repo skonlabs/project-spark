@@ -1,13 +1,33 @@
-import { Link } from "react-router-dom";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import {
-  ArrowRight, ArrowUpRight, BarChart3, Brain, FileText,
-  Monitor, Plus, Swords, TrendingUp, Zap,
+  ArrowRight, ArrowUpRight, BarChart3, Brain, Edit, FileText,
+  Monitor, Plus, Settings, Swords, TrendingUp, X, Zap,
 } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import toast from "react-hot-toast";
 import { ScoreRing } from "@/components/dashboard/ScoreRing";
 import { ScoreBar } from "@/components/dashboard/ScoreBar";
+import { useContent } from "@/contexts/ContentContext";
 
 export default function OverviewPage() {
+  const navigate = useNavigate();
+  const { products } = useContent();
+  const [showCreate, setShowCreate] = useState(false);
+  const [showEdit, setShowEdit] = useState<string | null>(null);
+  const [showSettings, setShowSettings] = useState<string | null>(null);
+  const [newProject, setNewProject] = useState({ name: "", category: "", url: "" });
+
+  const currentProduct = products[0];
+
+  function handleCreateProject() {
+    if (!newProject.name) return;
+    toast.success(`Project "${newProject.name}" created!`);
+    setShowCreate(false);
+    setNewProject({ name: "", category: "", url: "" });
+    navigate("/dashboard/projects");
+  }
+
   return (
     <div className="p-6 lg:p-8 space-y-6 max-w-[1200px]">
       <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between">
@@ -15,10 +35,148 @@ export default function OverviewPage() {
           <h1 className="text-2xl font-heading font-bold tracking-tight">AI Visibility Overview</h1>
           <p className="text-muted-foreground text-sm mt-0.5">Your AI Engine Optimization command center</p>
         </div>
-        <Link to="/dashboard/projects" className="btn-primary text-xs px-4 py-2">
-          <Plus className="h-3.5 w-3.5" /> New Project
-        </Link>
+        <div className="flex items-center gap-2">
+          {currentProduct && (
+            <>
+              <button onClick={() => setShowEdit(currentProduct.id)} className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors">
+                <Edit className="h-3.5 w-3.5" /> Edit Project
+              </button>
+              <button onClick={() => setShowSettings(currentProduct.id)} className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors">
+                <Settings className="h-3.5 w-3.5" /> Settings
+              </button>
+            </>
+          )}
+          <button onClick={() => setShowCreate(true)} className="btn-primary text-xs px-4 py-2">
+            <Plus className="h-3.5 w-3.5" /> New Project
+          </button>
+        </div>
       </motion.div>
+
+      {/* Create Project Modal */}
+      <AnimatePresence>
+        {showCreate && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowCreate(false)}>
+            <motion.div initial={{ scale: 0.97 }} animate={{ scale: 1 }} exit={{ scale: 0.97 }}
+              className="bg-card border border-border rounded-xl p-6 w-full max-w-md shadow-2xl" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="font-heading font-bold text-sm">Create New Project</h2>
+                <button onClick={() => setShowCreate(false)} className="text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>
+              </div>
+              <div className="space-y-3">
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Project Name</label>
+                  <input value={newProject.name} onChange={(e) => setNewProject({ ...newProject, name: e.target.value })}
+                    placeholder="My Product" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring" autoFocus />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Category</label>
+                  <input value={newProject.category} onChange={(e) => setNewProject({ ...newProject, category: e.target.value })}
+                    placeholder="AI Observability" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground mb-1.5 block">URL</label>
+                  <input value={newProject.url} onChange={(e) => setNewProject({ ...newProject, url: e.target.value })}
+                    placeholder="https://yourproduct.com" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring" />
+                </div>
+              </div>
+              <div className="flex gap-2 mt-5">
+                <button onClick={handleCreateProject} disabled={!newProject.name} className="btn-primary flex-1 justify-center py-2.5 text-sm">Create Project</button>
+                <button onClick={() => setShowCreate(false)} className="btn-secondary px-4 py-2.5 text-sm">Cancel</button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Edit Project Modal */}
+      <AnimatePresence>
+        {showEdit && currentProduct && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowEdit(null)}>
+            <motion.div initial={{ scale: 0.97 }} animate={{ scale: 1 }} exit={{ scale: 0.97 }}
+              className="bg-card border border-border rounded-xl p-6 w-full max-w-md shadow-2xl" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="font-heading font-bold text-sm">Edit Project</h2>
+                <button onClick={() => setShowEdit(null)} className="text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>
+              </div>
+              <div className="space-y-3">
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Project Name</label>
+                  <input defaultValue={currentProduct.name} className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Description</label>
+                  <input defaultValue={currentProduct.description} className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Category</label>
+                  <input defaultValue={currentProduct.category} className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground mb-1.5 block">URL</label>
+                  <input defaultValue={currentProduct.url} className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring" />
+                </div>
+              </div>
+              <div className="flex gap-2 mt-5">
+                <button onClick={() => { toast.success("Project updated!"); setShowEdit(null); }} className="btn-primary flex-1 justify-center py-2.5 text-sm">Save Changes</button>
+                <button onClick={() => setShowEdit(null)} className="btn-secondary px-4 py-2.5 text-sm">Cancel</button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Settings Modal */}
+      <AnimatePresence>
+        {showSettings && currentProduct && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowSettings(null)}>
+            <motion.div initial={{ scale: 0.97 }} animate={{ scale: 1 }} exit={{ scale: 0.97 }}
+              className="bg-card border border-border rounded-xl p-6 w-full max-w-lg shadow-2xl" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="font-heading font-bold text-sm">Project Settings — {currentProduct.name}</h2>
+                <button onClick={() => setShowSettings(null)} className="text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>
+              </div>
+              <div className="space-y-4">
+                <div className="rounded-lg border border-border p-4">
+                  <h3 className="text-xs font-semibold mb-2">Monitoring Schedule</h3>
+                  <div className="flex items-center gap-3">
+                    <select className="rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring">
+                      <option>Daily at 9:00 AM</option>
+                      <option>Every 6 hours</option>
+                      <option>Weekly on Monday</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="rounded-lg border border-border p-4">
+                  <h3 className="text-xs font-semibold mb-2">Competitors to Track</h3>
+                  <div className="flex flex-wrap gap-1.5">
+                    {["LangSmith", "Arize AI", "Helicone", "Datadog"].map((c) => (
+                      <span key={c} className="text-xs bg-muted px-2 py-1 rounded-full">{c}</span>
+                    ))}
+                  </div>
+                </div>
+                <div className="rounded-lg border border-border p-4">
+                  <h3 className="text-xs font-semibold mb-2">Notification Preferences</h3>
+                  <div className="space-y-2">
+                    {["Score drops below threshold", "New competitor content detected", "Weekly summary report"].map((pref) => (
+                      <label key={pref} className="flex items-center gap-2 text-sm">
+                        <input type="checkbox" defaultChecked className="rounded border-input" />
+                        {pref}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <div className="flex gap-2 mt-5">
+                <button onClick={() => { toast.success("Settings saved!"); setShowSettings(null); }} className="btn-primary flex-1 justify-center py-2.5 text-sm">Save Settings</button>
+                <button onClick={() => setShowSettings(null)} className="btn-secondary px-4 py-2.5 text-sm">Cancel</button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* KPI stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">

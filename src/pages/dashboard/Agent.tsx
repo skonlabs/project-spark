@@ -1,22 +1,9 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
-  Bot,
-  Brain,
-  TrendingUp,
-  FileText,
-  Swords,
-  Lightbulb,
-  CheckCircle2,
-  Clock,
-  Loader2,
-  Sparkles,
-  Play,
-  ChevronRight,
-  RefreshCw,
-  AlertTriangle,
-  ArrowRight,
-  Zap,
+  Bot, Brain, TrendingUp, FileText, Swords, Lightbulb,
+  CheckCircle2, Clock, Loader2, ChevronRight, RefreshCw,
+  AlertTriangle, Wrench,
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -31,58 +18,64 @@ interface AgentSuggestion {
   effort: "low" | "medium" | "high";
   status: "pending" | "in_progress" | "completed";
   created_at: string;
-  action_href?: string; // link to relevant page
+  content_id?: string; // link to the specific content item
+  action_href?: string;
 }
 
 const DEMO_SUGGESTIONS: AgentSuggestion[] = [
   {
     id: "1", type: "content",
     title: "Create 'Best AI Observability Tools 2026' comparison article",
-    description: "This high-volume query appears in 87% of monitored prompts but you have zero coverage. Competitors LangSmith and Arize AI rank #1 and #2. Creating a comprehensive comparison article could move you into the top 5 within 30 days.",
+    description: "This high-volume query appears in 87% of monitored prompts but you have zero coverage. Competitors LangSmith and Arize AI rank #1 and #2.",
     impact: "high", effort: "medium", status: "pending", created_at: "2026-03-08T09:00:00Z",
-    action_href: "/dashboard/content/generate?topic=Best+AI+Observability+Tools+2026",
+    content_id: "c1",
+    action_href: "/dashboard/content/c1",
   },
   {
     id: "2", type: "optimization",
     title: "Improve entity definition clarity on your homepage",
-    description: "Your homepage does not clearly state what GAEO Platform does within the first 2 sentences. LLMs scan the first 150 words to classify products. Adding 'GAEO Platform is the leading AI Engine Optimization platform' as the opening sentence is projected to increase entity clarity score from 65 → 82.",
+    description: "Your homepage does not clearly state what GAEO Platform does within the first 2 sentences. Adding a clear entity definition is projected to increase entity clarity score from 65 → 82.",
     impact: "high", effort: "low", status: "pending", created_at: "2026-03-08T09:05:00Z",
-    action_href: "/dashboard/content/c6", // homepage content item
+    content_id: "c6",
+    action_href: "/dashboard/content/c6",
   },
   {
     id: "3", type: "competitive",
     title: "LangSmith is now dominating 'LLM monitoring' prompts",
-    description: "LangSmith's share of voice increased from 54% to 71% in the last 7 days on 'how to monitor LLM applications' prompts. They published 3 new educational articles. Recommend publishing 2 counter-articles within 14 days.",
+    description: "LangSmith's share of voice increased from 54% to 71% in the last 7 days. They published 3 new educational articles. Recommend publishing 2 counter-articles.",
     impact: "high", effort: "high", status: "in_progress", created_at: "2026-03-07T14:00:00Z",
-    action_href: "/dashboard/competitive",
+    content_id: "c2",
+    action_href: "/dashboard/content/c2",
   },
   {
     id: "4", type: "content",
     title: "Add FAQ section to product documentation",
     description: "FAQ-style content is cited 3.2x more often by LLMs than long-form prose. Your documentation lacks FAQ sections. Adding FAQs to your top 5 pages is projected to increase prompt coverage score from 28 → 45.",
     impact: "medium", effort: "low", status: "pending", created_at: "2026-03-07T10:00:00Z",
-    action_href: "/dashboard/content/c4", // getting started guide
+    content_id: "c4",
+    action_href: "/dashboard/content/c4",
   },
   {
     id: "5", type: "monitoring",
     title: "Add Grok 2 to monitoring jobs",
-    description: "Grok 2 is growing rapidly as an AI discovery surface, especially for developer and B2B queries. Your current monitoring does not include Grok. Adding it will give you full coverage across all 5 major LLMs.",
+    description: "Grok 2 is growing rapidly as an AI discovery surface. Your current monitoring does not include Grok. Adding it will give you full coverage across all 5 major LLMs.",
     impact: "medium", effort: "low", status: "completed", created_at: "2026-03-06T09:00:00Z",
-    action_href: "/dashboard/monitoring",
   },
   {
     id: "6", type: "content",
     title: "Publish 'AI Observability vs Traditional Monitoring' article",
-    description: "This comparison query ranks in the top 10 most frequent AI search prompts in your category. Your competitors cover it but you don't. The article should explain when to use specialized AI observability tools vs general APM solutions.",
+    description: "This comparison query ranks in the top 10 most frequent AI search prompts in your category. Your competitors cover it but you don't.",
     impact: "medium", effort: "medium", status: "pending", created_at: "2026-03-06T08:00:00Z",
-    action_href: "/dashboard/content/generate?topic=AI+Observability+vs+Traditional+Monitoring",
+    content_id: "c5",
+    action_href: "/dashboard/content/c5",
   },
   {
     id: "7", type: "optimization",
     title: "Standardize product category labels across all content",
-    description: "Inconsistency detected: your content uses 'AI observability', 'LLM monitoring', 'AI monitoring', and 'ML observability' interchangeably. LLMs reward category consistency. Standardizing to 'AI observability' would improve consistency score from 72 → 90.",
+    description: "Inconsistency detected: your content uses 'AI observability', 'LLM monitoring', 'AI monitoring', and 'ML observability' interchangeably. Standardizing to 'AI observability' would improve consistency score from 72 → 90.",
     impact: "medium", effort: "medium", status: "pending", created_at: "2026-03-05T12:00:00Z",
-    action_href: "/dashboard/analysis",
+    content_id: "c1",
+    action_href: "/dashboard/content/c1",
   },
 ];
 
@@ -127,11 +120,6 @@ export default function AgentPage() {
     toast.success("Marked as complete!");
   }
 
-  function startWork(id: string) {
-    setSuggestions((prev) => prev.map((s) => s.id === id ? { ...s, status: "in_progress" } : s));
-    toast.success("Marked as in progress");
-  }
-
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
@@ -156,18 +144,14 @@ export default function AgentPage() {
               {agentEnabled ? "Active" : "Paused"}
             </span>
           </div>
-          <button
-            onClick={handleRunAgent}
-            disabled={isRunning}
-            className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-60"
-          >
+          <button onClick={handleRunAgent} disabled={isRunning}
+            className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-60">
             {isRunning ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
             {isRunning ? "Scanning..." : "Run Scan Now"}
           </button>
         </div>
       </div>
 
-      {/* Agent status banner */}
       {agentEnabled && (
         <div className="rounded-xl border border-green-500/30 bg-green-500/5 px-5 py-3 flex items-center gap-3">
           <div className="h-2 w-2 rounded-full bg-green-400 animate-pulse" />
@@ -176,7 +160,6 @@ export default function AgentPage() {
         </div>
       )}
 
-      {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {AGENT_STATS.map((stat) => (
           <div key={stat.label} className="rounded-xl border border-border bg-card p-4">
@@ -197,13 +180,10 @@ export default function AgentPage() {
           { id: "competitive", label: "Competitive" },
           { id: "monitoring", label: "Monitoring" },
         ].map((f) => (
-          <button
-            key={f.id}
-            onClick={() => setFilter(f.id as typeof filter)}
+          <button key={f.id} onClick={() => setFilter(f.id as typeof filter)}
             className={`rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors ${
               filter === f.id ? "border-primary/50 bg-primary/10 text-primary" : "border-border text-muted-foreground hover:text-foreground hover:border-primary/30"
-            }`}
-          >
+            }`}>
             {f.label}
             {f.id === "all" && pending > 0 && (
               <span className="ml-1.5 text-xs bg-primary text-primary-foreground rounded-full px-1.5 py-0.5">{pending}</span>
@@ -218,29 +198,19 @@ export default function AgentPage() {
           const config = typeConfig[suggestion.type];
           const isExpanded = expandedId === suggestion.id;
           return (
-            <div
-              key={suggestion.id}
+            <div key={suggestion.id}
               className={`rounded-xl border bg-card transition-colors ${
                 suggestion.status === "completed" ? "border-border opacity-60" : "border-border hover:border-primary/30"
-              }`}
-            >
-              <button
-                onClick={() => setExpandedId(isExpanded ? null : suggestion.id)}
-                className="w-full flex items-start gap-3 px-5 py-4 text-left"
-              >
-                <div className={`mt-0.5 rounded-lg p-1.5 flex-shrink-0 ${config.color}`}>
-                  {config.icon}
-                </div>
+              }`}>
+              <button onClick={() => setExpandedId(isExpanded ? null : suggestion.id)}
+                className="w-full flex items-start gap-3 px-5 py-4 text-left">
+                <div className={`mt-0.5 rounded-lg p-1.5 flex-shrink-0 ${config.color}`}>{config.icon}</div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <span className={`text-xs px-1.5 py-0.5 rounded ${config.color}`}>{config.label}</span>
-                    <span className={`text-xs font-medium ${impactColor[suggestion.impact]}`}>
-                      {suggestion.impact} impact
-                    </span>
+                    <span className={`text-xs font-medium ${impactColor[suggestion.impact]}`}>{suggestion.impact} impact</span>
                     <span className="text-xs text-muted-foreground">·</span>
-                    <span className={`text-xs ${effortColor[suggestion.effort]}`}>
-                      {suggestion.effort} effort
-                    </span>
+                    <span className={`text-xs ${effortColor[suggestion.effort]}`}>{suggestion.effort} effort</span>
                     {suggestion.status === "completed" && <CheckCircle2 className="h-3.5 w-3.5 text-green-400" />}
                     {suggestion.status === "in_progress" && <Clock className="h-3.5 w-3.5 text-yellow-400 animate-pulse" />}
                   </div>
@@ -252,50 +222,23 @@ export default function AgentPage() {
               {isExpanded && (
                 <div className="px-5 pb-5 pt-0 border-t border-border mt-0 space-y-4">
                   <p className="text-sm text-muted-foreground leading-relaxed pt-4">{suggestion.description}</p>
-                  {suggestion.status !== "completed" && (
-                    <div className="flex items-center gap-2 flex-wrap">
-                      {suggestion.status === "pending" && (
-                        <>
-                          <button
-                            onClick={() => startWork(suggestion.id)}
-                            className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors flex items-center gap-1"
-                          >
-                            <Play className="h-3 w-3" /> Start Working
-                          </button>
-                          {suggestion.action_href && (
-                            <Link
-                              to={suggestion.action_href}
-                              className="rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground flex items-center gap-1 hover:bg-primary/90 transition-colors"
-                            >
-                              <Sparkles className="h-3 w-3" /> Take Action
-                              <ArrowRight className="h-2.5 w-2.5" />
-                            </Link>
-                          )}
-                        </>
-                      )}
-                      {suggestion.status === "in_progress" && (
-                        <>
-                          <button
-                            onClick={() => markComplete(suggestion.id)}
-                            className="rounded-lg bg-green-600 px-3 py-1.5 text-xs font-medium text-white flex items-center gap-1"
-                          >
-                            <CheckCircle2 className="h-3 w-3" /> Mark Complete
-                          </button>
-                          {suggestion.action_href && (
-                            <Link
-                              to={suggestion.action_href}
-                              className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent flex items-center gap-1 transition-colors"
-                            >
-                              <ArrowRight className="h-3 w-3" /> View Related
-                            </Link>
-                          )}
-                        </>
-                      )}
-                      <span className="text-xs text-muted-foreground ml-auto">
-                        {new Date(suggestion.created_at).toLocaleDateString("en", { month: "short", day: "numeric" })}
-                      </span>
-                    </div>
-                  )}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {suggestion.status !== "completed" && suggestion.action_href && (
+                      <Link to={suggestion.action_href}
+                        className="rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground flex items-center gap-1 hover:bg-primary/90 transition-colors">
+                        <Wrench className="h-3 w-3" /> Fix this
+                      </Link>
+                    )}
+                    {suggestion.status === "in_progress" && (
+                      <button onClick={() => markComplete(suggestion.id)}
+                        className="rounded-lg bg-green-600 px-3 py-1.5 text-xs font-medium text-white flex items-center gap-1">
+                        <CheckCircle2 className="h-3 w-3" /> Mark Complete
+                      </button>
+                    )}
+                    <span className="text-xs text-muted-foreground ml-auto">
+                      {new Date(suggestion.created_at).toLocaleDateString("en", { month: "short", day: "numeric" })}
+                    </span>
+                  </div>
                 </div>
               )}
             </div>
