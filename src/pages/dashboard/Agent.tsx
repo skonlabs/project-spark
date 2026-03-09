@@ -231,7 +231,7 @@ export default function AgentPage() {
                     )}
                     {suggestion.status === "in_progress" && (
                       <button onClick={() => markComplete(suggestion.id)}
-                        className="rounded-lg bg-green-600 px-3 py-1.5 text-xs font-medium text-white flex items-center gap-1">
+                        className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white flex items-center gap-1">
                         <CheckCircle2 className="h-3 w-3" /> Mark Complete
                       </button>
                     )}

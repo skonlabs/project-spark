@@ -122,7 +122,7 @@ export default function CompetitivePage() {
               <div className="flex items-center gap-2.5">
                 <div className="h-3 w-3 rounded-full flex-shrink-0" style={{ background: comp.isYou ? "hsl(32, 95%, 44%)" : COLORS[Math.min(i + 1, COLORS.length - 1)] }} />
                 <span className="font-bold text-sm">{comp.name}</span>
-                {comp.isYou && <span className="text-[10px] bg-primary/15 text-primary px-2 py-0.5 rounded-full font-bold border border-primary/20">YOU</span>}
+                {comp.isYou && <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold border border-primary/20">YOU</span>}
               </div>
               <span className="text-lg font-black tabular-nums">{comp.share}%</span>
             </div>

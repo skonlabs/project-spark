@@ -186,7 +186,7 @@ export default function SettingsPage() {
                     const role = ROLE_INFO[member.role as keyof typeof ROLE_INFO];
                     return (
                       <div key={member.id} className="flex items-center gap-3 px-6 py-3.5">
-                        <div className="h-9 w-9 rounded-full bg-gradient-to-br from-primary/20 to-purple-500/10 flex items-center justify-center flex-shrink-0 border border-border/60">
+                        <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 border border-border/60">
                           <span className="text-xs font-bold text-primary">{member.name[0]}</span>
                         </div>
                         <div className="flex-1 min-w-0">
