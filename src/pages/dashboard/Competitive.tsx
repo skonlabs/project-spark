@@ -165,7 +165,7 @@ export default function CompetitivePage() {
                 className="w-full rounded-xl border border-input bg-background/80 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring/50 mb-5"
               />
               <div className="flex gap-2">
-                <button onClick={handleAddCompetitor} disabled={!newName.trim()} className="flex-1 rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 px-4 py-2.5 text-sm font-bold text-white hover:opacity-90 disabled:opacity-50 transition-all shadow-md shadow-primary/20">Add Competitor</button>
+                <button onClick={handleAddCompetitor} disabled={!newName.trim()} className="flex-1 btn-primary rounded-xl px-4 py-2.5 text-sm font-bold disabled:opacity-50 transition-all">Add Competitor</button>
                 <button onClick={() => setShowAddForm(false)} className="rounded-xl border border-border px-4 py-2.5 text-sm hover:bg-accent transition-colors">Cancel</button>
               </div>
             </motion.div>
