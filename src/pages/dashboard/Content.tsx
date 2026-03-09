@@ -1,11 +1,12 @@
 import { useState, useMemo } from "react";
 import { useDropzone } from "react-dropzone";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import {
   ArrowRight, CheckCircle2, Clock, AlertCircle, FileText, Globe,
   Loader2, Upload, Link as LinkIcon, Github, Database, Cloud, BookOpen,
   Code2, Zap, ExternalLink, Filter, Search, ChevronDown, ArrowUpDown,
-  FolderOpen, BarChart2, Sparkles, Send,
+  FolderOpen, BarChart2, Sparkles, Send, List, FolderTree, Plus, Folder,
+  ChevronRight, Package2, X,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { useContent } from "@/contexts/ContentContext";
@@ -20,15 +21,10 @@ const STATUS_CONFIG: Record<string, { icon: React.ReactNode; label: string; colo
   error: { icon: <AlertCircle className="h-3.5 w-3.5" />, label: "Error", color: "text-red-400 bg-red-500/10" },
 };
 
-const PIPELINE_STEPS = [
-  { label: "Analyzed", key: "analyzed" },
-  { label: "Generated", key: "generated" },
-  { label: "Published", key: "published" },
-];
-
 type IngestTab = "upload" | "url" | "crawl";
 type SortKey = "title" | "score" | "status" | "ingested_at";
 type FilterStatus = "all" | "analyzed" | "processing" | "pending" | "error";
+type ViewMode = "list" | "explorer";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -50,11 +46,31 @@ function ScoreBadge({ score }: { score: number | null }) {
   return <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border tabular-nums font-mono ${color}`}>{score}</span>;
 }
 
+function scoreColor(score: number | null) {
+  if (score === null) return "text-muted-foreground";
+  if (score >= 65) return "text-emerald-400";
+  if (score >= 45) return "text-yellow-400";
+  return "text-red-400";
+}
+
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function ContentPage() {
   const navigate = useNavigate();
-  const { products, addContentItem, updateItemStatus } = useContent();
+  const [searchParams] = useSearchParams();
+  const { products, addContentItem, updateItemStatus, addFolder } = useContent();
+
+  // View mode
+  const [viewMode, setViewMode] = useState<ViewMode>("list");
+
+  // Explorer state
+  const [expandedProducts, setExpandedProducts] = useState<Set<string>>(new Set(products.map(p => p.id)));
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set(products.flatMap(p => p.folders.map(f => f.id))));
+
+  // Create folder modal
+  const [showCreateFolder, setShowCreateFolder] = useState(false);
+  const [newFolderName, setNewFolderName] = useState("");
+  const [newFolderProductId, setNewFolderProductId] = useState(products[0]?.id ?? "");
 
   // Ingest state
   const [showIngest, setShowIngest] = useState(false);
@@ -63,10 +79,13 @@ export default function ContentPage() {
   const [crawlUrl, setCrawlUrl] = useState("");
   const [crawlMaxPages, setCrawlMaxPages] = useState("50");
 
-  // Target
-  const [selectedProductId, setSelectedProductId] = useState(products[0]?.id ?? "");
+  // Target - check URL params for pre-selected folder
+  const preselectedProductId = searchParams.get("product");
+  const preselectedFolderId = searchParams.get("folder");
+  
+  const [selectedProductId, setSelectedProductId] = useState(preselectedProductId ?? (products[0]?.id ?? ""));
   const selectedProduct = products.find((p) => p.id === selectedProductId) ?? products[0];
-  const [selectedFolderId, setSelectedFolderId] = useState(selectedProduct?.folders[0]?.id ?? "");
+  const [selectedFolderId, setSelectedFolderId] = useState(preselectedFolderId ?? (selectedProduct?.folders[0]?.id ?? ""));
   const selectedFolder = selectedProduct?.folders.find((f) => f.id === selectedFolderId) ?? selectedProduct?.folders[0];
 
   // Library filters
@@ -131,6 +150,33 @@ export default function ContentPage() {
     maxSize: 50 * 1024 * 1024,
   });
 
+  // ── Toggle functions ──────────────────────────────────────────────────────
+  function toggleProduct(id: string) {
+    setExpandedProducts((prev) => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; });
+  }
+  function toggleFolder(id: string) {
+    setExpandedFolders((prev) => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; });
+  }
+
+  // ── Open ingest for specific folder ───────────────────────────────────────
+  function openIngestForFolder(productId: string, folderId: string) {
+    setSelectedProductId(productId);
+    setSelectedFolderId(folderId);
+    setShowIngest(true);
+  }
+
+  // ── Create folder handler ─────────────────────────────────────────────────
+  function handleCreateFolder() {
+    if (!newFolderName.trim()) {
+      toast.error("Please enter a folder name");
+      return;
+    }
+    addFolder(newFolderProductId, newFolderName.trim());
+    toast.success(`Folder "${newFolderName}" created`);
+    setNewFolderName("");
+    setShowCreateFolder(false);
+  }
+
   // ── Ingest handler ────────────────────────────────────────────────────────
   function ingest(title: string, url: string, sourceType: "url" | "file" | "crawl") {
     if (!selectedProduct || !selectedFolder) { toast.error("Select a product and folder first."); return; }
@@ -159,7 +205,6 @@ export default function ContentPage() {
 
   function handleCrawl() {
     if (!crawlUrl) return;
-    // Simulate crawl producing multiple items
     const count = Math.min(parseInt(crawlMaxPages), 5);
     for (let i = 0; i < count; i++) {
       const page = `${crawlUrl}/page-${i + 1}`;
@@ -194,9 +239,29 @@ export default function ContentPage() {
             All your content in one place — ingest, track status, and manage your pipeline
           </p>
         </div>
-        <button onClick={() => setShowIngest(!showIngest)} className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors">
-          <Upload className="h-4 w-4" /> Ingest Content
-        </button>
+        <div className="flex items-center gap-2">
+          {/* View toggle */}
+          <div className="flex items-center rounded-lg border border-border bg-muted/30 p-0.5">
+            <button
+              onClick={() => setViewMode("list")}
+              className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${viewMode === "list" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              <List className="h-3.5 w-3.5" /> List
+            </button>
+            <button
+              onClick={() => setViewMode("explorer")}
+              className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${viewMode === "explorer" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              <FolderTree className="h-3.5 w-3.5" /> Explorer
+            </button>
+          </div>
+          <button onClick={() => setShowCreateFolder(true)} className="inline-flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium hover:bg-accent transition-colors">
+            <Plus className="h-4 w-4" /> New Folder
+          </button>
+          <button onClick={() => setShowIngest(!showIngest)} className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors">
+            <Upload className="h-4 w-4" /> Ingest Content
+          </button>
+        </div>
       </div>
 
       {/* Aggregate stats */}
@@ -309,112 +374,219 @@ export default function ContentPage() {
         </div>
       )}
 
-      {/* Content Library Table */}
-      <div className="rounded-xl border border-border bg-card overflow-hidden">
-        {/* Table toolbar */}
-        <div className="flex items-center gap-3 px-4 py-3 border-b border-border flex-wrap">
-          <div className="flex items-center gap-2 flex-1 min-w-[200px]">
-            <Search className="h-3.5 w-3.5 text-muted-foreground" />
-            <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search content..."
-              className="bg-transparent text-sm focus:outline-none flex-1" />
-          </div>
-          <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value as FilterStatus)}
-            className="rounded-lg border border-input bg-background px-2.5 py-1.5 text-xs focus:outline-none">
-            <option value="all">All Status</option>
-            <option value="analyzed">Analyzed</option>
-            <option value="processing">Processing</option>
-            <option value="pending">Pending</option>
-            <option value="error">Error</option>
-          </select>
-          <select value={filterProduct} onChange={(e) => setFilterProduct(e.target.value)}
-            className="rounded-lg border border-input bg-background px-2.5 py-1.5 text-xs focus:outline-none">
-            <option value="all">All Products</option>
-            {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-          </select>
-          <span className="text-xs text-muted-foreground tabular-nums">{filteredItems.length} items</span>
-        </div>
-
-        {/* Batch actions */}
-        {selectedItems.size > 0 && (
-          <div className="flex items-center gap-3 px-4 py-2 bg-primary/5 border-b border-primary/20">
-            <span className="text-xs font-medium text-primary">{selectedItems.size} selected</span>
-            <button onClick={() => { toast.success(`Analyzing ${selectedItems.size} items...`); setSelectedItems(new Set()); }}
-              className="text-xs text-primary hover:underline flex items-center gap-1"><BarChart2 className="h-3 w-3" /> Analyze All</button>
-            <button onClick={() => { toast.success(`Generating for ${selectedItems.size} items...`); setSelectedItems(new Set()); }}
-              className="text-xs text-primary hover:underline flex items-center gap-1"><Sparkles className="h-3 w-3" /> Generate All</button>
-            <button onClick={() => setSelectedItems(new Set())} className="text-xs text-muted-foreground hover:text-foreground ml-auto">Clear</button>
-          </div>
-        )}
-
-        {/* Table header */}
-        <div className="grid grid-cols-[32px_1fr_120px_80px_80px_100px_40px] gap-2 px-4 py-2 border-b border-border text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">
-          <div className="flex items-center">
-            <input type="checkbox" checked={selectedItems.size === filteredItems.length && filteredItems.length > 0} onChange={toggleSelectAll} className="rounded" />
-          </div>
-          <button onClick={() => toggleSort("title")} className="flex items-center gap-1 hover:text-foreground text-left">
-            Title <ArrowUpDown className="h-2.5 w-2.5" />
-          </button>
-          <span>Location</span>
-          <button onClick={() => toggleSort("score")} className="flex items-center gap-1 hover:text-foreground">
-            Score <ArrowUpDown className="h-2.5 w-2.5" />
-          </button>
-          <button onClick={() => toggleSort("status")} className="flex items-center gap-1 hover:text-foreground">
-            Status <ArrowUpDown className="h-2.5 w-2.5" />
-          </button>
-          <span>Pipeline</span>
-          <span></span>
-        </div>
-
-        {/* Table rows */}
-        <div className="divide-y divide-border/50 max-h-[500px] overflow-y-auto">
-          {filteredItems.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <FileText className="h-10 w-10 text-muted-foreground/20 mb-3" />
-              <p className="text-sm text-muted-foreground mb-2">No content found</p>
-              <button onClick={() => setShowIngest(true)} className="text-xs text-primary hover:underline">Ingest your first content</button>
+      {/* Content view - List or Explorer */}
+      {viewMode === "list" ? (
+        /* List View */
+        <div className="rounded-xl border border-border bg-card overflow-hidden">
+          {/* Table toolbar */}
+          <div className="flex items-center gap-3 px-4 py-3 border-b border-border flex-wrap">
+            <div className="flex items-center gap-2 flex-1 min-w-[200px]">
+              <Search className="h-3.5 w-3.5 text-muted-foreground" />
+              <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search content..."
+                className="bg-transparent text-sm focus:outline-none flex-1" />
             </div>
-          ) : (
-            filteredItems.map((item) => {
-              const status = STATUS_CONFIG[item.status] ?? STATUS_CONFIG.pending;
-              const isAnalyzed = item.status === "analyzed";
-              return (
-                <div key={item.id} className={`grid grid-cols-[32px_1fr_120px_80px_80px_100px_40px] gap-2 px-4 py-2.5 hover:bg-accent/20 transition-colors items-center ${selectedItems.has(item.id) ? "bg-primary/5" : ""}`}>
-                  <div>
-                    <input type="checkbox" checked={selectedItems.has(item.id)} onChange={() => toggleSelect(item.id)} className="rounded" />
-                  </div>
-                  <button onClick={() => navigate(`/dashboard/content/${item.id}`)} className="text-left min-w-0">
-                    <p className="text-sm font-medium truncate hover:text-primary transition-colors">{item.title}</p>
-                    <p className="text-[10px] text-muted-foreground/50 truncate">{item.url !== "#" ? item.url : item.source_type}</p>
-                  </button>
-                  <div className="flex items-center gap-1 text-[10px] text-muted-foreground truncate">
-                    <FolderOpen className="h-2.5 w-2.5 flex-shrink-0" />
-                    <span className="truncate">{item.folderName}</span>
-                  </div>
-                  <div className="flex justify-center">
-                    <ScoreBadge score={item.score} />
-                  </div>
-                  <div className="flex justify-center">
-                    <span className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full ${status.color}`}>
-                      {status.icon} {status.label}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-0.5">
-                    {/* Mini pipeline indicator */}
-                    <div className={`h-1.5 flex-1 rounded-full ${isAnalyzed ? "bg-green-400" : item.status === "processing" ? "bg-blue-400 animate-pulse" : "bg-muted"}`} title="Analyzed" />
-                    <div className="h-1.5 flex-1 rounded-full bg-muted" title="Generated" />
-                    <div className="h-1.5 flex-1 rounded-full bg-muted" title="Published" />
-                  </div>
-                  <div className="flex justify-center">
-                    <button onClick={() => navigate(`/dashboard/content/${item.id}`)} className="text-muted-foreground/40 hover:text-primary transition-colors">
-                      <ArrowRight className="h-3.5 w-3.5" />
+            <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value as FilterStatus)}
+              className="rounded-lg border border-input bg-background px-2.5 py-1.5 text-xs focus:outline-none">
+              <option value="all">All Status</option>
+              <option value="analyzed">Analyzed</option>
+              <option value="processing">Processing</option>
+              <option value="pending">Pending</option>
+              <option value="error">Error</option>
+            </select>
+            <select value={filterProduct} onChange={(e) => setFilterProduct(e.target.value)}
+              className="rounded-lg border border-input bg-background px-2.5 py-1.5 text-xs focus:outline-none">
+              <option value="all">All Products</option>
+              {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+            <span className="text-xs text-muted-foreground tabular-nums">{filteredItems.length} items</span>
+          </div>
+
+          {/* Batch actions */}
+          {selectedItems.size > 0 && (
+            <div className="flex items-center gap-3 px-4 py-2 bg-primary/5 border-b border-primary/20">
+              <span className="text-xs font-medium text-primary">{selectedItems.size} selected</span>
+              <button onClick={() => { toast.success(`Analyzing ${selectedItems.size} items...`); setSelectedItems(new Set()); }}
+                className="text-xs text-primary hover:underline flex items-center gap-1"><BarChart2 className="h-3 w-3" /> Analyze All</button>
+              <button onClick={() => { toast.success(`Generating for ${selectedItems.size} items...`); setSelectedItems(new Set()); }}
+                className="text-xs text-primary hover:underline flex items-center gap-1"><Sparkles className="h-3 w-3" /> Generate All</button>
+              <button onClick={() => setSelectedItems(new Set())} className="text-xs text-muted-foreground hover:text-foreground ml-auto">Clear</button>
+            </div>
+          )}
+
+          {/* Table header */}
+          <div className="grid grid-cols-[32px_1fr_120px_80px_80px_100px_40px] gap-2 px-4 py-2 border-b border-border text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">
+            <div className="flex items-center">
+              <input type="checkbox" checked={selectedItems.size === filteredItems.length && filteredItems.length > 0} onChange={toggleSelectAll} className="rounded" />
+            </div>
+            <button onClick={() => toggleSort("title")} className="flex items-center gap-1 hover:text-foreground text-left">
+              Title <ArrowUpDown className="h-2.5 w-2.5" />
+            </button>
+            <span>Location</span>
+            <button onClick={() => toggleSort("score")} className="flex items-center gap-1 hover:text-foreground">
+              Score <ArrowUpDown className="h-2.5 w-2.5" />
+            </button>
+            <button onClick={() => toggleSort("status")} className="flex items-center gap-1 hover:text-foreground">
+              Status <ArrowUpDown className="h-2.5 w-2.5" />
+            </button>
+            <span>Pipeline</span>
+            <span></span>
+          </div>
+
+          {/* Table rows */}
+          <div className="divide-y divide-border/50 max-h-[500px] overflow-y-auto">
+            {filteredItems.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <FileText className="h-10 w-10 text-muted-foreground/20 mb-3" />
+                <p className="text-sm text-muted-foreground mb-2">No content found</p>
+                <button onClick={() => setShowIngest(true)} className="text-xs text-primary hover:underline">Ingest your first content</button>
+              </div>
+            ) : (
+              filteredItems.map((item) => {
+                const status = STATUS_CONFIG[item.status] ?? STATUS_CONFIG.pending;
+                const isAnalyzed = item.status === "analyzed";
+                return (
+                  <div key={item.id} className={`grid grid-cols-[32px_1fr_120px_80px_80px_100px_40px] gap-2 px-4 py-2.5 hover:bg-accent/20 transition-colors items-center ${selectedItems.has(item.id) ? "bg-primary/5" : ""}`}>
+                    <div>
+                      <input type="checkbox" checked={selectedItems.has(item.id)} onChange={() => toggleSelect(item.id)} className="rounded" />
+                    </div>
+                    <button onClick={() => navigate(`/dashboard/content/${item.id}`)} className="text-left min-w-0">
+                      <p className="text-sm font-medium truncate hover:text-primary transition-colors">{item.title}</p>
+                      <p className="text-[10px] text-muted-foreground/50 truncate">{item.url !== "#" ? item.url : item.source_type}</p>
                     </button>
+                    <div className="flex items-center gap-1 text-[10px] text-muted-foreground truncate">
+                      <FolderOpen className="h-2.5 w-2.5 flex-shrink-0" />
+                      <span className="truncate">{item.folderName}</span>
+                    </div>
+                    <div className="flex justify-center">
+                      <ScoreBadge score={item.score} />
+                    </div>
+                    <div className="flex justify-center">
+                      <span className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full ${status.color}`}>
+                        {status.icon} {status.label}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-0.5">
+                      {/* Mini pipeline indicator */}
+                      <div className={`h-1.5 flex-1 rounded-full ${isAnalyzed ? "bg-green-400" : item.status === "processing" ? "bg-blue-400 animate-pulse" : "bg-muted"}`} title="Analyzed" />
+                      <div className="h-1.5 flex-1 rounded-full bg-muted" title="Generated" />
+                      <div className="h-1.5 flex-1 rounded-full bg-muted" title="Published" />
+                    </div>
+                    <div className="flex justify-center">
+                      <button onClick={() => navigate(`/dashboard/content/${item.id}`)} className="text-muted-foreground/40 hover:text-primary transition-colors">
+                        <ArrowRight className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
                   </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+      ) : (
+        /* Explorer View */
+        <div className="rounded-xl border border-border bg-card overflow-hidden">
+          <div className="flex items-center gap-3 px-4 py-3 border-b border-border">
+            <FolderTree className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm font-medium">Explorer View</span>
+            <span className="text-xs text-muted-foreground ml-auto">{allItems.length} items across {products.reduce((acc, p) => acc + p.folders.length, 0)} folders</span>
+          </div>
+          <div className="p-4 space-y-2 max-h-[600px] overflow-y-auto">
+            {products.map((product) => {
+              const isProductExpanded = expandedProducts.has(product.id);
+              const productItems = product.folders.flatMap(f => f.items);
+              const analyzedProductCount = productItems.filter(i => i.status === "analyzed").length;
+              
+              return (
+                <div key={product.id} className="space-y-1">
+                  {/* Product row */}
+                  <div className="flex items-center gap-2 group">
+                    <button onClick={() => toggleProduct(product.id)} className="p-1 text-muted-foreground/50 hover:text-foreground transition-colors">
+                      {isProductExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                    </button>
+                    <Package2 className="h-4 w-4 text-primary flex-shrink-0" />
+                    <span className="font-medium text-sm flex-1">{product.name}</span>
+                    <span className="text-[10px] text-muted-foreground font-mono">{analyzedProductCount}/{productItems.length}</span>
+                  </div>
+                  
+                  {/* Folders */}
+                  {isProductExpanded && (
+                    <div className="ml-6 space-y-1">
+                      {product.folders.map((folder) => {
+                        const isFolderExpanded = expandedFolders.has(folder.id);
+                        const folderAnalyzed = folder.items.filter(i => i.status === "analyzed").length;
+                        
+                        return (
+                          <div key={folder.id} className="space-y-0.5">
+                            {/* Folder row */}
+                            <div className="flex items-center gap-2 group">
+                              <button onClick={() => toggleFolder(folder.id)} className="p-1 text-muted-foreground/50 hover:text-foreground transition-colors">
+                                {isFolderExpanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+                              </button>
+                              {isFolderExpanded ? <FolderOpen className="h-4 w-4 text-muted-foreground flex-shrink-0" /> : <Folder className="h-4 w-4 text-muted-foreground flex-shrink-0" />}
+                              <span className="text-sm flex-1">{folder.name}</span>
+                              <span className="text-[10px] text-muted-foreground font-mono">{folderAnalyzed}/{folder.items.length}</span>
+                              <button
+                                onClick={() => openIngestForFolder(product.id, folder.id)}
+                                className="opacity-0 group-hover:opacity-100 p-1 text-muted-foreground hover:text-primary transition-all"
+                                title="Add content to this folder"
+                              >
+                                <Plus className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                            
+                            {/* Items */}
+                            {isFolderExpanded && (
+                              <div className="ml-6 space-y-0.5">
+                                {folder.items.map((item) => {
+                                  const status = STATUS_CONFIG[item.status] ?? STATUS_CONFIG.pending;
+                                  return (
+                                    <button
+                                      key={item.id}
+                                      onClick={() => navigate(`/dashboard/content/${item.id}`)}
+                                      className="flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-left hover:bg-accent/30 transition-colors group"
+                                    >
+                                      <FileText className="h-3.5 w-3.5 text-muted-foreground/50 flex-shrink-0" />
+                                      <span className="text-sm flex-1 truncate group-hover:text-primary transition-colors">{item.title}</span>
+                                      {item.status === "processing" ? (
+                                        <Loader2 className="h-3 w-3 text-blue-400 animate-spin" />
+                                      ) : item.score !== null ? (
+                                        <span className={`text-[10px] font-bold tabular-nums font-mono ${scoreColor(item.score)}`}>{item.score}</span>
+                                      ) : (
+                                        <span className="text-[10px] text-muted-foreground/30">—</span>
+                                      )}
+                                      <ArrowRight className="h-3 w-3 text-muted-foreground/30 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                    </button>
+                                  );
+                                })}
+                                {/* Add content button */}
+                                <button
+                                  onClick={() => openIngestForFolder(product.id, folder.id)}
+                                  className="flex items-center gap-2 w-full px-2 py-1 rounded-lg text-left hover:bg-accent/30 transition-colors text-muted-foreground/50 hover:text-muted-foreground"
+                                >
+                                  <Plus className="h-3 w-3" />
+                                  <span className="text-xs">Add content</span>
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                      {/* Add folder button */}
+                      <button
+                        onClick={() => { setNewFolderProductId(product.id); setShowCreateFolder(true); }}
+                        className="flex items-center gap-2 ml-6 px-2 py-1 rounded-lg text-left hover:bg-accent/30 transition-colors text-muted-foreground/50 hover:text-muted-foreground"
+                      >
+                        <Plus className="h-3 w-3" />
+                        <span className="text-xs">New folder</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
               );
-            })
-          )}
+            })}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Next step hint */}
       <div className="rounded-xl border border-border bg-card/50 p-4 flex items-center gap-4 flex-wrap">
@@ -432,6 +604,57 @@ export default function ContentPage() {
           <Send className="h-3 w-3" /> Publish Queue
         </Link>
       </div>
+
+      {/* Create Folder Modal */}
+      {showCreateFolder && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowCreateFolder(false)}>
+          <div className="bg-card border border-border rounded-xl p-6 w-full max-w-md shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-heading font-bold text-sm flex items-center gap-2">
+                <Folder className="h-4 w-4" /> Create New Folder
+              </h2>
+              <button onClick={() => setShowCreateFolder(false)} className="text-muted-foreground hover:text-foreground">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Product</label>
+                <select
+                  value={newFolderProductId}
+                  onChange={(e) => setNewFolderProductId(e.target.value)}
+                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                >
+                  {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                </select>
+              </div>
+              
+              <div>
+                <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Folder Name</label>
+                <input
+                  type="text"
+                  value={newFolderName}
+                  onChange={(e) => setNewFolderName(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") handleCreateFolder(); }}
+                  placeholder="e.g., Case Studies"
+                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                  autoFocus
+                />
+              </div>
+            </div>
+            
+            <div className="flex gap-2 mt-5">
+              <button onClick={handleCreateFolder} disabled={!newFolderName.trim()} className="flex-1 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground disabled:opacity-60">
+                Create Folder
+              </button>
+              <button onClick={() => setShowCreateFolder(false)} className="rounded-lg border border-border bg-background px-4 py-2.5 text-sm font-medium hover:bg-accent transition-colors">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
