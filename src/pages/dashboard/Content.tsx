@@ -167,15 +167,23 @@ export default function ContentPage() {
   }
 
   // ── Create folder handler ─────────────────────────────────────────────────
-  function handleCreateFolder() {
+  async function handleCreateFolder() {
     if (!newFolderName.trim()) {
       toast.error("Please enter a folder name");
       return;
     }
-    addFolder(newFolderProductId, newFolderName.trim());
-    toast.success(`Folder "${newFolderName}" created`);
-    setNewFolderName("");
-    setShowCreateFolder(false);
+    if (!newFolderProductId) {
+      toast.error("Please select a product first");
+      return;
+    }
+    try {
+      await addFolder(newFolderProductId, newFolderName.trim());
+      toast.success(`Folder "${newFolderName}" created`);
+      setNewFolderName("");
+      setShowCreateFolder(false);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to create folder");
+    }
   }
 
   // ── Ingest handler ────────────────────────────────────────────────────────
