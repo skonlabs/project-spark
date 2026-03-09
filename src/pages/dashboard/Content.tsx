@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { useContent } from "@/contexts/ContentContext";
-import { CONTENT_ANALYSIS } from "@/data/products";
+// Analysis data now comes from useContent context
 import { FolderPicker } from "@/components/dashboard/FolderPicker";
 
 // ─── Status config ────────────────────────────────────────────────────────────

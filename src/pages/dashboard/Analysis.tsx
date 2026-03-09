@@ -7,7 +7,7 @@ import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { ScoreRing } from "@/components/dashboard/ScoreRing";
 import { ScoreBar } from "@/components/dashboard/ScoreBar";
-import { CONTENT_ANALYSIS } from "@/data/products";
+// Analysis data now comes from useContent context
 import { useContent } from "@/contexts/ContentContext";
 
 const SCORE_DIMENSIONS = [

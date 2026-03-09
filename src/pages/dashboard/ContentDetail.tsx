@@ -21,9 +21,8 @@ import {
 import toast from "react-hot-toast";
 import {
   INTENT_DEFINITIONS,
-  type GapSeverity,
-  type LLMIntentType,
 } from "@/data/products";
+import type { LLMIntentType } from "@/data/products";
 import { useContent } from "@/contexts/ContentContext";
 
 // ─── Types ────────────────────────────────────────────────────────────────────

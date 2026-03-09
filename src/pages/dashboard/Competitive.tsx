@@ -3,7 +3,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 
 import { AlertTriangle, CheckCircle2, Loader2, Package2, Plus, Swords, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
-import { MOCK_PRODUCTS } from "@/data/products";
+import { useContent } from "@/contexts/ContentContext";
 
 const COMPETITOR_DATA: Record<string, Array<{ name: string; share: number; isYou: boolean; strengths: string[]; gaps: string[] }>> = {
   "product-gaeo": [
