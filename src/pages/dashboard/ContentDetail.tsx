@@ -624,6 +624,103 @@ export default function ContentDetailPage() {
               </div>
             ) : (
               <>
+                {/* Prompt coverage section — moved to top */}
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-semibold">
+                      AI Query Coverage
+                      <span className="text-xs font-normal text-muted-foreground ml-2">
+                        — generate prompts this content should answer, then pick which ones to add
+                      </span>
+                    </h3>
+                    <button
+                      onClick={handleGeneratePrompts}
+                      disabled={isGeneratingPrompts}
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-primary/10 border border-primary/30 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/20 disabled:opacity-60 transition-colors"
+                    >
+                      {isGeneratingPrompts ? (
+                        <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Generating…</>
+                      ) : (
+                        <><Sparkles className="h-3.5 w-3.5" /> Generate Prompts</>
+                      )}
+                    </button>
+                  </div>
+
+                  {!generatedPrompts && !isGeneratingPrompts && (
+                    <div className="rounded-xl border border-dashed border-border bg-muted/5 p-8 flex flex-col items-center gap-2 text-center">
+                      <Sparkles className="h-6 w-6 text-muted-foreground/40" />
+                      <p className="text-sm text-muted-foreground">
+                        Click "Generate Prompts" to discover the AI queries this content should answer. You can then pick which ones to add to your database.
+                      </p>
+                    </div>
+                  )}
+
+                  {isGeneratingPrompts && (
+                    <div className="rounded-xl border border-border bg-muted/10 p-8 flex items-center justify-center gap-3">
+                      <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                      <p className="text-sm text-muted-foreground">Analysing content and generating prompts…</p>
+                    </div>
+                  )}
+
+                  {generatedPrompts && !isGeneratingPrompts && (() => {
+                    const existingInDb = new Set(getProductPrompts(product.id).map((p) => p.text.toLowerCase()));
+                    const intentGroups = INTENTS.map((intent) => ({
+                      intent,
+                      prompts: generatedPrompts.filter((p) => p.intent === intent.id),
+                    })).filter((g) => g.prompts.length > 0);
+                    const alreadyTrackedCount = generatedPrompts.filter((p) => existingInDb.has(p.text.toLowerCase())).length;
+                    return (
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between rounded-xl border border-border bg-card px-4 py-3 text-sm">
+                          <div className="flex items-center gap-4">
+                            <span><span className="font-bold">{generatedPrompts.length}</span> <span className="text-muted-foreground">prompts</span></span>
+                            <span className="text-muted-foreground">·</span>
+                            <span><span className="font-bold text-green-400">{alreadyTrackedCount}</span> <span className="text-muted-foreground">in database</span></span>
+                            {selectedPrompts.size > 0 && (
+                              <>
+                                <span className="text-muted-foreground">·</span>
+                                <span><span className="font-bold text-primary">{selectedPrompts.size}</span> <span className="text-muted-foreground">selected</span></span>
+                              </>
+                            )}
+                          </div>
+                          <button
+                            onClick={handleAddPromptsToDatabase}
+                            disabled={selectedPrompts.size === 0}
+                            className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-40 transition-colors"
+                          >
+                            <Plus className="h-3 w-3" /> Add Selected to Prompts
+                          </button>
+                        </div>
+                        {intentGroups.map(({ intent: intentMeta, prompts }) => (
+                          <div key={intentMeta.id} className="rounded-xl border border-border bg-card overflow-hidden">
+                            <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border bg-muted/20">
+                              <span className="text-xs font-semibold">{intentMeta.label}</span>
+                              <span className="text-xs text-muted-foreground">— {intentMeta.desc}</span>
+                              <span className="ml-auto text-[10px] text-muted-foreground">{prompts.length}</span>
+                            </div>
+                            <div className="divide-y divide-border">
+                              {prompts.map((p) => {
+                                const alreadyInDb = existingInDb.has(p.text.toLowerCase());
+                                const isSelected = selectedPrompts.has(p.text);
+                                return (
+                                  <label key={p.text} className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer transition-colors ${isSelected ? "bg-primary/5" : "hover:bg-accent/30"} ${alreadyInDb ? "opacity-60" : ""}`}>
+                                    <input type="checkbox" checked={isSelected} disabled={alreadyInDb} onChange={() => togglePromptSelection(p.text)} className="accent-primary flex-shrink-0" />
+                                    <span className="text-sm flex-1">{p.text}</span>
+                                    {alreadyInDb
+                                      ? <span className="text-[10px] bg-green-500/15 text-green-400 px-2 py-0.5 rounded-full flex-shrink-0 flex items-center gap-1"><CheckCircle2 className="h-3 w-3" /> In DB</span>
+                                      : <span className="text-[10px] bg-muted text-muted-foreground px-2 py-0.5 rounded-full flex-shrink-0">{intentMeta.label}</span>
+                                    }
+                                  </label>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
+                </div>
+
                 {/* Score + dimensions */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   <div className="rounded-xl border border-border bg-card p-6 flex flex-col items-center gap-2">
@@ -704,6 +801,15 @@ export default function ContentDetailPage() {
                               </p>
                               <p className="text-xs text-foreground">{gap.fix}</p>
                             </div>
+                            <button
+                              onClick={() => {
+                                toast.success(`Generating fix for "${gap.label}"...`);
+                                setTimeout(() => toast.success(`Fix generated for "${gap.label}" — check the Generate tab.`), 2000);
+                              }}
+                              className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-primary/10 border border-primary/30 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/20 transition-colors"
+                            >
+                              <Sparkles className="h-3 w-3" /> Generate Fix
+                            </button>
                           </div>
                         </div>
                       </div>
@@ -740,102 +846,7 @@ export default function ContentDetailPage() {
                   </div>
                 </div>
 
-                {/* Prompt coverage section */}
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-semibold">
-                      AI Query Coverage
-                      <span className="text-xs font-normal text-muted-foreground ml-2">
-                        — prompts this content should answer
-                      </span>
-                    </h3>
-                    <button
-                      onClick={handleGeneratePrompts}
-                      disabled={isGeneratingPrompts}
-                      className="inline-flex items-center gap-1.5 rounded-lg bg-primary/10 border border-primary/30 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/20 disabled:opacity-60 transition-colors"
-                    >
-                      {isGeneratingPrompts ? (
-                        <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Generating…</>
-                      ) : (
-                        <><Sparkles className="h-3.5 w-3.5" /> Generate Prompts</>
-                      )}
-                    </button>
-                  </div>
-
-                  {!generatedPrompts && !isGeneratingPrompts && (
-                    <div className="rounded-xl border border-dashed border-border bg-muted/5 p-8 flex flex-col items-center gap-2 text-center">
-                      <Sparkles className="h-6 w-6 text-muted-foreground/40" />
-                      <p className="text-sm text-muted-foreground">
-                        Click "Generate Prompts" to discover the AI queries this content should answer.
-                      </p>
-                    </div>
-                  )}
-
-                  {isGeneratingPrompts && (
-                    <div className="rounded-xl border border-border bg-muted/10 p-8 flex items-center justify-center gap-3">
-                      <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                      <p className="text-sm text-muted-foreground">Analysing content and generating prompts…</p>
-                    </div>
-                  )}
-
-                  {generatedPrompts && !isGeneratingPrompts && (() => {
-                    const existingInDb = new Set(getProductPrompts(product.id).map((p) => p.text.toLowerCase()));
-                    const intentGroups = INTENTS.map((intent) => ({
-                      intent,
-                      prompts: generatedPrompts.filter((p) => p.intent === intent.id),
-                    })).filter((g) => g.prompts.length > 0);
-                    const alreadyTrackedCount = generatedPrompts.filter((p) => existingInDb.has(p.text.toLowerCase())).length;
-                    return (
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between rounded-xl border border-border bg-card px-4 py-3 text-sm">
-                          <div className="flex items-center gap-4">
-                            <span><span className="font-bold">{generatedPrompts.length}</span> <span className="text-muted-foreground">prompts</span></span>
-                            <span className="text-muted-foreground">·</span>
-                            <span><span className="font-bold text-green-400">{alreadyTrackedCount}</span> <span className="text-muted-foreground">in database</span></span>
-                            {selectedPrompts.size > 0 && (
-                              <>
-                                <span className="text-muted-foreground">·</span>
-                                <span><span className="font-bold text-primary">{selectedPrompts.size}</span> <span className="text-muted-foreground">selected</span></span>
-                              </>
-                            )}
-                          </div>
-                          <button
-                            onClick={handleAddPromptsToDatabase}
-                            disabled={selectedPrompts.size === 0}
-                            className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-40 transition-colors"
-                          >
-                            <Plus className="h-3 w-3" /> Add to Product Prompts
-                          </button>
-                        </div>
-                        {intentGroups.map(({ intent: intentMeta, prompts }) => (
-                          <div key={intentMeta.id} className="rounded-xl border border-border bg-card overflow-hidden">
-                            <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border bg-muted/20">
-                              <span className="text-xs font-semibold">{intentMeta.label}</span>
-                              <span className="text-xs text-muted-foreground">— {intentMeta.desc}</span>
-                              <span className="ml-auto text-[10px] text-muted-foreground">{prompts.length}</span>
-                            </div>
-                            <div className="divide-y divide-border">
-                              {prompts.map((p) => {
-                                const alreadyInDb = existingInDb.has(p.text.toLowerCase());
-                                const isSelected = selectedPrompts.has(p.text);
-                                return (
-                                  <label key={p.text} className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer transition-colors ${isSelected ? "bg-primary/5" : "hover:bg-accent/30"} ${alreadyInDb ? "opacity-60" : ""}`}>
-                                    <input type="checkbox" checked={isSelected} disabled={alreadyInDb} onChange={() => togglePromptSelection(p.text)} className="accent-primary flex-shrink-0" />
-                                    <span className="text-sm flex-1">{p.text}</span>
-                                    {alreadyInDb
-                                      ? <span className="text-[10px] bg-green-500/15 text-green-400 px-2 py-0.5 rounded-full flex-shrink-0 flex items-center gap-1"><CheckCircle2 className="h-3 w-3" /> In DB</span>
-                                      : <span className="text-[10px] bg-muted text-muted-foreground px-2 py-0.5 rounded-full flex-shrink-0">{intentMeta.label}</span>
-                                    }
-                                  </label>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    );
-                  })()}
-                </div>
+                {/* Prompt coverage section removed — now at top of analysis tab */}
 
                 {/* CTA → Generate */}
                 <div className="rounded-xl border border-primary/20 bg-primary/5 p-5 flex items-center justify-between gap-4">

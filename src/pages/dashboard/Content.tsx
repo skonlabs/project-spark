@@ -292,17 +292,25 @@ export default function ContentPage() {
             <button onClick={() => setShowIngest(false)} className="text-xs text-muted-foreground hover:text-foreground">Close</button>
           </div>
 
-          {/* Target selector */}
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="text-xs text-muted-foreground font-medium">Into:</span>
-            <select value={selectedProductId} onChange={(e) => { setSelectedProductId(e.target.value); const p = products.find((p) => p.id === e.target.value); setSelectedFolderId(p?.folders[0]?.id ?? ""); }}
-              className="rounded-lg border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring">
-              {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
-            <span className="text-muted-foreground text-sm">→</span>
-            <select value={selectedFolderId} onChange={(e) => setSelectedFolderId(e.target.value)}
-              className="rounded-lg border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring">
-              {(selectedProduct?.folders ?? []).map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
+          {/* Parent folder picker */}
+          <div>
+            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Parent Folder</label>
+            <select
+              value={`${selectedProductId}::${selectedFolderId}`}
+              onChange={(e) => {
+                const [pId, fId] = e.target.value.split("::");
+                setSelectedProductId(pId);
+                setSelectedFolderId(fId);
+              }}
+              className="w-full max-w-sm rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+            >
+              {products.map((p) =>
+                p.folders.map((f) => (
+                  <option key={f.id} value={`${p.id}::${f.id}`}>
+                    {p.name} / {f.name}
+                  </option>
+                ))
+              )}
             </select>
           </div>
 
@@ -539,6 +547,7 @@ export default function ContentPage() {
                               <div className="ml-6 space-y-0.5">
                                 {folder.items.map((item) => {
                                   const status = STATUS_CONFIG[item.status] ?? STATUS_CONFIG.pending;
+                                  const isAnalyzed = item.status === "analyzed";
                                   return (
                                     <button
                                       key={item.id}
@@ -547,13 +556,18 @@ export default function ContentPage() {
                                     >
                                       <FileText className="h-3.5 w-3.5 text-muted-foreground/50 flex-shrink-0" />
                                       <span className="text-sm flex-1 truncate group-hover:text-primary transition-colors">{item.title}</span>
-                                      {item.status === "processing" ? (
-                                        <Loader2 className="h-3 w-3 text-blue-400 animate-spin" />
-                                      ) : item.score !== null ? (
-                                        <span className={`text-[10px] font-bold tabular-nums font-mono ${scoreColor(item.score)}`}>{item.score}</span>
-                                      ) : (
-                                        <span className="text-[10px] text-muted-foreground/30">—</span>
-                                      )}
+                                      {/* Status */}
+                                      <span className={`inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full flex-shrink-0 ${status.color}`}>
+                                        {status.icon} <span className="hidden sm:inline">{status.label}</span>
+                                      </span>
+                                      {/* Score */}
+                                      <ScoreBadge score={item.score} />
+                                      {/* Pipeline */}
+                                      <div className="flex items-center gap-0.5 w-16 flex-shrink-0">
+                                        <div className={`h-1.5 flex-1 rounded-full ${isAnalyzed ? "bg-green-400" : item.status === "processing" ? "bg-blue-400 animate-pulse" : "bg-muted"}`} title="Analyzed" />
+                                        <div className="h-1.5 flex-1 rounded-full bg-muted" title="Generated" />
+                                        <div className="h-1.5 flex-1 rounded-full bg-muted" title="Published" />
+                                      </div>
                                       <ArrowRight className="h-3 w-3 text-muted-foreground/30 opacity-0 group-hover:opacity-100 transition-opacity" />
                                     </button>
                                   );
@@ -620,13 +634,25 @@ export default function ContentPage() {
             
             <div className="space-y-4">
               <div>
-                <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Product</label>
+                <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Parent Folder</label>
                 <select
-                  value={newFolderProductId}
-                  onChange={(e) => setNewFolderProductId(e.target.value)}
+                  value={`${newFolderProductId}::root`}
+                  onChange={(e) => {
+                    const [pId] = e.target.value.split("::");
+                    setNewFolderProductId(pId);
+                  }}
                   className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
                 >
-                  {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                  {products.map((p) => (
+                    <optgroup key={p.id} label={p.name}>
+                      <option value={`${p.id}::root`}>{p.name} (root)</option>
+                      {p.folders.map((f) => (
+                        <option key={f.id} value={`${p.id}::${f.id}`}>
+                          {p.name} / {f.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  ))}
                 </select>
               </div>
               
