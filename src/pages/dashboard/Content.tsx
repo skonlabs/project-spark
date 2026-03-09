@@ -75,6 +75,7 @@ export default function ContentPage() {
 
   // Ingest state
   const [showIngest, setShowIngest] = useState(false);
+  const [isIngesting, setIsIngesting] = useState(false);
   const [activeTab, setActiveTab] = useState<IngestTab>("upload");
   const [urlInput, setUrlInput] = useState("");
   const [crawlUrl, setCrawlUrl] = useState("");
@@ -209,11 +210,19 @@ export default function ContentPage() {
     setShowIngest(false);
   }
 
-  function handleUrlIngest() {
+  async function handleUrlIngest() {
     if (!urlInput) return;
-    ingest(titleFromUrl(urlInput), urlInput, "url");
-    toast.success(`"${titleFromUrl(urlInput)}" ingesting — watch status below`);
-    setUrlInput("");
+    setIsIngesting(true);
+    toast.success(`Scraping "${titleFromUrl(urlInput)}" — this may take a moment...`);
+    try {
+      await ingest(titleFromUrl(urlInput), urlInput, "url");
+      toast.success(`Content ingested successfully!`);
+      setUrlInput("");
+    } catch {
+      toast.error("Failed to ingest URL");
+    } finally {
+      setIsIngesting(false);
+    }
   }
 
   function handleCrawl() {
@@ -363,11 +372,24 @@ export default function ContentPage() {
 
           {/* URL */}
           {activeTab === "url" && (
-            <div className="flex gap-2">
-              <input value={urlInput} onChange={(e) => setUrlInput(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter") handleUrlIngest(); }}
-                placeholder="https://example.com/page or sitemap.xml" className="flex-1 rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring" />
-              <button disabled={!urlInput} onClick={handleUrlIngest} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60">Ingest</button>
+            <div className="space-y-2">
+              <div className="flex gap-2">
+                <input value={urlInput} onChange={(e) => setUrlInput(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter" && !isIngesting) handleUrlIngest(); }}
+                  placeholder="https://example.com/page or sitemap.xml" className="flex-1 rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring" disabled={isIngesting} />
+                <button disabled={!urlInput || isIngesting} onClick={handleUrlIngest} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60 flex items-center gap-2">
+                  {isIngesting ? <><Loader2 className="h-4 w-4 animate-spin" /> Scraping...</> : "Ingest"}
+                </button>
+              </div>
+              {isIngesting && (
+                <div className="flex items-center gap-3 rounded-lg border border-blue-500/20 bg-blue-500/5 px-3 py-2">
+                  <Loader2 className="h-4 w-4 animate-spin text-blue-400" />
+                  <div className="flex-1">
+                    <p className="text-xs font-medium text-blue-400">Fetching and processing content...</p>
+                    <p className="text-[10px] text-muted-foreground">Scraping page, converting to markdown, and analyzing structure</p>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
