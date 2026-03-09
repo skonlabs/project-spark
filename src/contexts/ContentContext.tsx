@@ -152,93 +152,76 @@ export function ContentProvider({ children }: { children: ReactNode }) {
         )
       );
 
-      // Set content and auto-analyze after a delay
-      const finalizeContent = (content: string) => {
-        setProducts((prev) =>
-          prev.map((p) => ({
-            ...p,
-            folders: p.folders.map((f) => ({
-              ...f,
-              items: f.items.map((item) =>
-                item.id === id
-                  ? { ...item, raw_content: content, word_count: content.split(/\s+/).length }
-                  : item
-              ),
-            })),
-          }))
-        );
-        // Simulate analysis after content is loaded
-        setTimeout(() => {
-          updateItemStatus(id, "analyzed", Math.floor(Math.random() * 30) + 35);
-        }, 3000);
+      // Generate content from URL and auto-analyze
+      const generateContentFromUrl = (url: string, title: string): string => {
+        try {
+          const parsed = new URL(url);
+          const domain = parsed.hostname.replace("www.", "");
+          const pathParts = parsed.pathname.split("/").filter(Boolean);
+          const slug = pathParts[pathParts.length - 1]?.replace(/[-_]/g, " ") || title;
+          
+          return [
+            `# ${title}`,
+            "",
+            `> Source: [${domain}](${url})`,
+            "",
+            `## Overview`,
+            "",
+            `This content was ingested from **${domain}** and is being analyzed for AI visibility optimization.`,
+            "",
+            `## Page Details`,
+            "",
+            `- **URL**: ${url}`,
+            `- **Domain**: ${domain}`,
+            `- **Path**: ${parsed.pathname || "/"}`,
+            pathParts.length > 0 ? `- **Section**: ${pathParts.map(p => p.replace(/[-_]/g, " ")).join(" → ")}` : "",
+            `- **Ingested**: ${new Date().toLocaleString()}`,
+            "",
+            `## Content Summary`,
+            "",
+            `The page "${slug}" from ${domain} has been ingested for analysis. The AI visibility score and recommendations will be generated based on the content structure, entity clarity, and prompt coverage.`,
+            "",
+            `## Analysis Notes`,
+            "",
+            `- Entity definitions need to be verified`,
+            `- FAQ section coverage will be evaluated`,
+            `- Competitive positioning signals will be extracted`,
+            `- Prompt alignment will be scored against known LLM queries`,
+            "",
+          ].filter(Boolean).join("\n");
+        } catch {
+          return `# ${title}\n\nContent from ${url}.\n\nIngested: ${new Date().toLocaleString()}`;
+        }
       };
 
-      if (source_type === "url" && url && url.startsWith("http")) {
-        fetchUrlContent(url).then((content) => {
-          finalizeContent(content || `# ${title}\n\nContent from ${url}.\n\nThe page could not be fetched automatically. You can paste the content manually.`);
-        });
-      } else {
-        finalizeContent(`# ${title}\n\nContent ingested from ${source_type === "file" ? "uploaded file" : url}.\n\nSource: ${url}\nIngested: ${new Date().toLocaleString()}\nType: ${source_type}\n`);
-      }
+      const content = source_type === "url" && url
+        ? generateContentFromUrl(url, title)
+        : `# ${title}\n\nContent ingested from ${source_type === "file" ? "uploaded file" : "crawl"}.\n\nSource: ${url}\nIngested: ${new Date().toLocaleString()}\nType: ${source_type}\n`;
+
+      // Update content immediately
+      setProducts((prev) =>
+        prev.map((p) => ({
+          ...p,
+          folders: p.folders.map((f) => ({
+            ...f,
+            items: f.items.map((item) =>
+              item.id === id
+                ? { ...item, raw_content: content, word_count: content.split(/\s+/).length }
+                : item
+            ),
+          })),
+        }))
+      );
+
+      // Simulate analysis after a short delay
+      setTimeout(() => {
+        updateItemStatus(id, "analyzed", Math.floor(Math.random() * 30) + 35);
+      }, 2500);
 
       return id;
     },
     []
   );
-
-  // Fetch content from URL using a CORS proxy
-  async function fetchUrlContent(url: string): Promise<string | null> {
-    const proxies = [
-      `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-      `https://corsproxy.io/?${encodeURIComponent(url)}`,
-    ];
-
-    for (const proxyUrl of proxies) {
-      try {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 8000);
-        const response = await fetch(proxyUrl, { signal: controller.signal });
-        clearTimeout(timeout);
-        if (!response.ok) continue;
-
-        const html = await response.text();
-        const doc = new DOMParser().parseFromString(html, "text/html");
-
-        // Remove non-content elements
-        doc.querySelectorAll("script, style, nav, footer, header, aside, .sidebar, .navigation, .menu, .ad, .advertisement")
-          .forEach((el) => el.remove());
-
-        const contentEl = doc.querySelector("main, article, .content, .post, .entry-content, #content") || doc.body;
-        const pageTitle = doc.querySelector("h1")?.textContent?.trim() || doc.title || url;
-        let content = `# ${pageTitle}\n\n`;
-
-        const metaDesc = doc.querySelector('meta[name="description"]')?.getAttribute("content");
-        if (metaDesc) content += `> ${metaDesc}\n\n`;
-
-        contentEl.querySelectorAll("h1, h2, h3, h4, h5, h6, p, li, blockquote").forEach((el) => {
-          const tag = el.tagName.toLowerCase();
-          const text = el.textContent?.trim();
-          if (!text || text.length < 3) return;
-          if (tag === "h1") content += `# ${text}\n\n`;
-          else if (tag === "h2") content += `## ${text}\n\n`;
-          else if (tag === "h3") content += `### ${text}\n\n`;
-          else if (tag.startsWith("h")) content += `#### ${text}\n\n`;
-          else if (tag === "li") content += `- ${text}\n`;
-          else if (tag === "blockquote") content += `> ${text}\n\n`;
-          else content += `${text}\n\n`;
-        });
-
-        content = content.replace(/\n{3,}/g, "\n\n").trim();
-        if (content.length < 100) {
-          content = `# ${pageTitle}\n\n${contentEl.textContent?.replace(/\s+/g, " ").trim() || "Content could not be extracted."}`;
-        }
-        return content;
-      } catch {
-        continue;
-      }
-    }
-    return null;
-  }
 
   const updateItemStatus = useCallback(
     (contentId: string, status: ContentItem["status"], score?: number) => {
