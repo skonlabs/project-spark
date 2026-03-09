@@ -45,21 +45,11 @@ const INTENTS: Array<{ id: LLMIntentType; label: string; desc: string; example: 
   { id: "troubleshoot", label: "Troubleshoot / Fix", desc: "User is diagnosing a problem or seeking a fix", example: '"Why is my LLM giving wrong answers?"' },
 ];
 
-// Demo prompts generated from content analysis, grouped by intent
-const DEMO_GENERATED_PROMPTS: Array<{ text: string; intent: LLMIntentType }> = [
-  { text: "What is AI observability?", intent: "seek_explanation" },
-  { text: "How does AI observability work?", intent: "seek_explanation" },
-  { text: "What is LLM monitoring and why does it matter?", intent: "seek_explanation" },
-  { text: "Best AI observability platforms 2026", intent: "find_best" },
-  { text: "Top LLM monitoring tools for production", intent: "find_best" },
-  { text: "GAEO Platform vs LangSmith — which is better?", intent: "compare" },
-  { text: "AI observability vs traditional APM monitoring", intent: "compare" },
-  { text: "How to set up LLM monitoring in production?", intent: "learn_howto" },
-  { text: "How to detect model drift in production?", intent: "learn_howto" },
-  { text: "LangSmith alternatives for AI monitoring", intent: "find_alternative" },
-  { text: "Open source LLM observability tools", intent: "find_alternative" },
-  { text: "Why is my LLM giving inconsistent outputs?", intent: "troubleshoot" },
-];
+// Type for generated prompts
+interface GeneratedPrompt {
+  text: string;
+  intent: LLMIntentType;
+}
 
 const ENHANCEMENTS = [
   { id: "entity_definition", label: "Add entity definition block", desc: "Clear 'X is Y' statement in intro" },
@@ -230,7 +220,7 @@ export default function ContentDetailPage() {
 
   // Prompts tab state
   const [isGeneratingPrompts, setIsGeneratingPrompts] = useState(false);
-  const [generatedPrompts, setGeneratedPrompts] = useState<typeof DEMO_GENERATED_PROMPTS | null>(null);
+  const [generatedPrompts, setGeneratedPrompts] = useState<GeneratedPrompt[] | null>(null);
   const [selectedPrompts, setSelectedPrompts] = useState<Set<string>>(new Set());
 
   // Generate state
@@ -369,14 +359,55 @@ export default function ContentDetailPage() {
     setEnhancements((prev) => ({ ...prev, [id]: !prev[id] }));
   }
 
-  function handleGeneratePrompts() {
+  async function handleGeneratePrompts() {
     setIsGeneratingPrompts(true);
     setSelectedPrompts(new Set());
-    setTimeout(() => {
-      setGeneratedPrompts(DEMO_GENERATED_PROMPTS);
+    setGeneratedPrompts(null);
+    
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-prompts`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({
+            contentTitle: item.title,
+            contentBody: item.raw_content,
+            productName: product.name,
+            productCategory: product.category,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        if (response.status === 429) {
+          toast.error("Rate limit exceeded. Please try again later.");
+        } else if (response.status === 402) {
+          toast.error("Payment required. Please add credits to your workspace.");
+        } else {
+          toast.error(errorData.error || "Failed to generate prompts");
+        }
+        setIsGeneratingPrompts(false);
+        return;
+      }
+
+      const data = await response.json();
+      if (data.prompts && Array.isArray(data.prompts)) {
+        setGeneratedPrompts(data.prompts);
+        toast.success(`${data.prompts.length} prompts generated from your content!`);
+      } else {
+        toast.error("Invalid response from AI");
+      }
+    } catch (error) {
+      console.error("Error generating prompts:", error);
+      toast.error("Failed to generate prompts. Please try again.");
+    } finally {
       setIsGeneratingPrompts(false);
-      toast.success("12 prompts generated from your content!");
-    }, 1600);
+    }
   }
 
   function togglePromptSelection(text: string) {
