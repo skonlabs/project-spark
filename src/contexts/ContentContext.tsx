@@ -152,29 +152,8 @@ export function ContentProvider({ children }: { children: ReactNode }) {
         )
       );
 
-      // Fetch actual content from URL
-      if (source_type === "url" && url && url.startsWith("http")) {
-        fetchUrlContent(url).then((content) => {
-          setProducts((prev) =>
-            prev.map((p) => ({
-              ...p,
-              folders: p.folders.map((f) => ({
-                ...f,
-                items: f.items.map((item) =>
-                  item.id === id
-                    ? { 
-                        ...item, 
-                        raw_content: content,
-                        word_count: content ? content.split(/\s+/).length : null 
-                      }
-                    : item
-                ),
-              })),
-            }))
-          );
-        });
-      } else {
-        // For file uploads or crawl, set placeholder
+      // Set content and auto-analyze after a delay
+      const finalizeContent = (content: string) => {
         setProducts((prev) =>
           prev.map((p) => ({
             ...p,
@@ -182,15 +161,24 @@ export function ContentProvider({ children }: { children: ReactNode }) {
               ...f,
               items: f.items.map((item) =>
                 item.id === id
-                  ? { 
-                      ...item, 
-                      raw_content: `# ${title}\n\nContent ingested from ${source_type === "file" ? "uploaded file" : url}.\n\nThis content is being processed and analysed for AI visibility.\n\n## About this content\n\nSource: ${url}\nIngested: ${new Date().toLocaleString()}\nType: ${source_type}\n`
-                    }
+                  ? { ...item, raw_content: content, word_count: content.split(/\s+/).length }
                   : item
               ),
             })),
           }))
         );
+        // Simulate analysis after content is loaded
+        setTimeout(() => {
+          updateItemStatus(id, "analyzed", Math.floor(Math.random() * 30) + 35);
+        }, 3000);
+      };
+
+      if (source_type === "url" && url && url.startsWith("http")) {
+        fetchUrlContent(url).then((content) => {
+          finalizeContent(content || `# ${title}\n\nContent from ${url}.\n\nThe page could not be fetched automatically. You can paste the content manually.`);
+        });
+      } else {
+        finalizeContent(`# ${title}\n\nContent ingested from ${source_type === "file" ? "uploaded file" : url}.\n\nSource: ${url}\nIngested: ${new Date().toLocaleString()}\nType: ${source_type}\n`);
       }
 
       return id;
@@ -200,72 +188,56 @@ export function ContentProvider({ children }: { children: ReactNode }) {
 
   // Fetch content from URL using a CORS proxy
   async function fetchUrlContent(url: string): Promise<string | null> {
-    try {
-      // Use allorigins.win as a CORS proxy
-      const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
-      const response = await fetch(proxyUrl);
-      
-      if (!response.ok) {
-        console.error("Failed to fetch URL:", response.status);
-        return `# Content from ${url}\n\nUnable to fetch content automatically. The URL may be protected or unavailable.\n\nPlease copy and paste the content manually, or try a different URL.`;
+    const proxies = [
+      `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+      `https://corsproxy.io/?${encodeURIComponent(url)}`,
+    ];
+
+    for (const proxyUrl of proxies) {
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 8000);
+        const response = await fetch(proxyUrl, { signal: controller.signal });
+        clearTimeout(timeout);
+        if (!response.ok) continue;
+
+        const html = await response.text();
+        const doc = new DOMParser().parseFromString(html, "text/html");
+
+        // Remove non-content elements
+        doc.querySelectorAll("script, style, nav, footer, header, aside, .sidebar, .navigation, .menu, .ad, .advertisement")
+          .forEach((el) => el.remove());
+
+        const contentEl = doc.querySelector("main, article, .content, .post, .entry-content, #content") || doc.body;
+        const pageTitle = doc.querySelector("h1")?.textContent?.trim() || doc.title || url;
+        let content = `# ${pageTitle}\n\n`;
+
+        const metaDesc = doc.querySelector('meta[name="description"]')?.getAttribute("content");
+        if (metaDesc) content += `> ${metaDesc}\n\n`;
+
+        contentEl.querySelectorAll("h1, h2, h3, h4, h5, h6, p, li, blockquote").forEach((el) => {
+          const tag = el.tagName.toLowerCase();
+          const text = el.textContent?.trim();
+          if (!text || text.length < 3) return;
+          if (tag === "h1") content += `# ${text}\n\n`;
+          else if (tag === "h2") content += `## ${text}\n\n`;
+          else if (tag === "h3") content += `### ${text}\n\n`;
+          else if (tag.startsWith("h")) content += `#### ${text}\n\n`;
+          else if (tag === "li") content += `- ${text}\n`;
+          else if (tag === "blockquote") content += `> ${text}\n\n`;
+          else content += `${text}\n\n`;
+        });
+
+        content = content.replace(/\n{3,}/g, "\n\n").trim();
+        if (content.length < 100) {
+          content = `# ${pageTitle}\n\n${contentEl.textContent?.replace(/\s+/g, " ").trim() || "Content could not be extracted."}`;
+        }
+        return content;
+      } catch {
+        continue;
       }
-      
-      const html = await response.text();
-      
-      // Basic HTML to text conversion
-      const doc = new DOMParser().parseFromString(html, "text/html");
-      
-      // Remove script, style, nav, footer, header elements
-      const elementsToRemove = doc.querySelectorAll("script, style, nav, footer, header, aside, .sidebar, .navigation, .menu, .ad, .advertisement");
-      elementsToRemove.forEach((el) => el.remove());
-      
-      // Get main content area if available
-      const mainContent = doc.querySelector("main, article, .content, .post, .entry-content, #content");
-      const contentEl = mainContent || doc.body;
-      
-      // Extract text with basic formatting
-      let content = "";
-      
-      // Get title
-      const pageTitle = doc.querySelector("h1")?.textContent?.trim() || doc.title || url;
-      content += `# ${pageTitle}\n\n`;
-      
-      // Get meta description if available
-      const metaDesc = doc.querySelector('meta[name="description"]')?.getAttribute("content");
-      if (metaDesc) {
-        content += `> ${metaDesc}\n\n`;
-      }
-      
-      // Extract headings and paragraphs
-      const elements = contentEl.querySelectorAll("h1, h2, h3, h4, h5, h6, p, li, blockquote");
-      elements.forEach((el) => {
-        const tag = el.tagName.toLowerCase();
-        const text = el.textContent?.trim();
-        if (!text || text.length < 3) return;
-        
-        if (tag === "h1") content += `# ${text}\n\n`;
-        else if (tag === "h2") content += `## ${text}\n\n`;
-        else if (tag === "h3") content += `### ${text}\n\n`;
-        else if (tag === "h4") content += `#### ${text}\n\n`;
-        else if (tag === "h5" || tag === "h6") content += `##### ${text}\n\n`;
-        else if (tag === "li") content += `- ${text}\n`;
-        else if (tag === "blockquote") content += `> ${text}\n\n`;
-        else content += `${text}\n\n`;
-      });
-      
-      // Clean up multiple newlines
-      content = content.replace(/\n{3,}/g, "\n\n").trim();
-      
-      if (content.length < 100) {
-        // Fallback to body text if extraction didn't work well
-        content = `# ${pageTitle}\n\n${contentEl.textContent?.replace(/\s+/g, " ").trim() || "Content could not be extracted."}`;
-      }
-      
-      return content;
-    } catch (error) {
-      console.error("Error fetching URL content:", error);
-      return `# Content from ${url}\n\nUnable to fetch content automatically due to network restrictions.\n\nPlease copy and paste the content manually.`;
     }
+    return null;
   }
 
   const updateItemStatus = useCallback(
