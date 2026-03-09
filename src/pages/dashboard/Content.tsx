@@ -188,11 +188,16 @@ export default function ContentPage() {
 
   // ── Ingest handler ────────────────────────────────────────────────────────
   async function ingest(title: string, url: string, sourceType: "url" | "file" | "crawl") {
-    if (!selectedProduct || !selectedFolder) { toast.error("Select a product and folder first."); return; }
-    const itemId = await addContentItem({
-      productId: selectedProduct.id, folderId: selectedFolder.id, title, url, source_type: sourceType,
-    });
-    return itemId;
+    if (!selectedProduct) { toast.error("Please create a product first."); return; }
+    if (!selectedFolder) { toast.error("Please select a folder first."); return; }
+    try {
+      const itemId = await addContentItem({
+        productId: selectedProduct.id, folderId: selectedFolder.id, title, url, source_type: sourceType,
+      });
+      return itemId;
+    } catch (err: any) {
+      toast.error(err.message || "Failed to ingest content");
+    }
   }
 
   function handleBatchUpload() {
