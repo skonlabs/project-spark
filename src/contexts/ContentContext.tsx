@@ -152,29 +152,8 @@ export function ContentProvider({ children }: { children: ReactNode }) {
         )
       );
 
-      // Fetch actual content from URL
-      if (source_type === "url" && url && url.startsWith("http")) {
-        fetchUrlContent(url).then((content) => {
-          setProducts((prev) =>
-            prev.map((p) => ({
-              ...p,
-              folders: p.folders.map((f) => ({
-                ...f,
-                items: f.items.map((item) =>
-                  item.id === id
-                    ? { 
-                        ...item, 
-                        raw_content: content,
-                        word_count: content ? content.split(/\s+/).length : null 
-                      }
-                    : item
-                ),
-              })),
-            }))
-          );
-        });
-      } else {
-        // For file uploads or crawl, set placeholder
+      // Set content and auto-analyze after a delay
+      const finalizeContent = (content: string) => {
         setProducts((prev) =>
           prev.map((p) => ({
             ...p,
@@ -182,15 +161,24 @@ export function ContentProvider({ children }: { children: ReactNode }) {
               ...f,
               items: f.items.map((item) =>
                 item.id === id
-                  ? { 
-                      ...item, 
-                      raw_content: `# ${title}\n\nContent ingested from ${source_type === "file" ? "uploaded file" : url}.\n\nThis content is being processed and analysed for AI visibility.\n\n## About this content\n\nSource: ${url}\nIngested: ${new Date().toLocaleString()}\nType: ${source_type}\n`
-                    }
+                  ? { ...item, raw_content: content, word_count: content.split(/\s+/).length }
                   : item
               ),
             })),
           }))
         );
+        // Simulate analysis after content is loaded
+        setTimeout(() => {
+          updateItemStatus(id, "analyzed", Math.floor(Math.random() * 30) + 35);
+        }, 3000);
+      };
+
+      if (source_type === "url" && url && url.startsWith("http")) {
+        fetchUrlContent(url).then((content) => {
+          finalizeContent(content || `# ${title}\n\nContent from ${url}.\n\nThe page could not be fetched automatically. You can paste the content manually.`);
+        });
+      } else {
+        finalizeContent(`# ${title}\n\nContent ingested from ${source_type === "file" ? "uploaded file" : url}.\n\nSource: ${url}\nIngested: ${new Date().toLocaleString()}\nType: ${source_type}\n`);
       }
 
       return id;
