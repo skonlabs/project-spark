@@ -345,7 +345,7 @@ export function ContentProvider({ children }: { children: ReactNode }) {
 
   return (
     <ContentContext.Provider
-      value={{ products, getAnalysis, findContent, addContentItem, updateItemStatus, addFolder }}
+      value={{ products, getAnalysis, findContent, addContentItem, updateItemStatus, addFolder, getProductPrompts, addPromptsToProduct }}
     >
       {children}
     </ContentContext.Provider>

@@ -8,9 +8,9 @@ import {
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
 import {
-  getProductPrompts, addPromptsToProduct,
   type LLMIntentType, type ProductPrompt,
 } from "@/data/products";
+import { useContent } from "@/contexts/ContentContext";
 
 interface IntentMeta {
   id: LLMIntentType; label: string; desc: string; icon: React.ReactNode; color: string; gradient: string; example: string;
