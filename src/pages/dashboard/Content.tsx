@@ -11,6 +11,7 @@ import {
 import toast from "react-hot-toast";
 import { useContent } from "@/contexts/ContentContext";
 import { CONTENT_ANALYSIS } from "@/data/products";
+import { FolderPicker } from "@/components/dashboard/FolderPicker";
 
 // ─── Status config ────────────────────────────────────────────────────────────
 
