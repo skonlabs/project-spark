@@ -228,14 +228,25 @@ export function ContentProvider({ children }: { children: ReactNode }) {
   }) => {
     if (!user) throw new Error("Not authenticated");
 
-    // Generate raw content
-    let rawContent = `# ${title}\n\nContent from ${url}.\nIngested: ${new Date().toLocaleString()}`;
+    // Fetch real content from URL via edge function
+    let rawContent = `# ${title}\n\nContent from ${url}.`;
+    let resolvedTitle = title;
+    let resolvedWordCount = word_count;
+
     if (source_type === "url" && url) {
       try {
-        const parsed = new URL(url.startsWith("http") ? url : `https://${url}`);
-        const domain = parsed.hostname.replace("www.", "");
-        rawContent = `# ${title}\n\n> Source: [${domain}](${url})\n\n## Overview\n\nThis content was ingested from **${domain}** and is being analyzed for AI visibility optimization.\n\nIngested: ${new Date().toLocaleString()}`;
-      } catch { /* keep default */ }
+        const { data: scrapeData, error: scrapeError } = await supabase.functions.invoke("scrape-url", {
+          body: { url },
+        });
+        if (!scrapeError && scrapeData?.content) {
+          rawContent = scrapeData.content;
+          if (scrapeData.title) resolvedTitle = scrapeData.title;
+          if (scrapeData.wordCount) resolvedWordCount = scrapeData.wordCount;
+        }
+      } catch {
+        // Fall back to placeholder if scraping fails
+        console.warn("Scraping failed, using placeholder content");
+      }
     }
 
     const { data, error } = await supabase
@@ -243,11 +254,11 @@ export function ContentProvider({ children }: { children: ReactNode }) {
       .insert({
         folder_id: folderId,
         user_id: user.id,
-        title,
+        title: resolvedTitle,
         url,
         source_type,
         status: "processing",
-        word_count: word_count ?? rawContent.split(/\s+/).length,
+        word_count: resolvedWordCount ?? rawContent.split(/\s+/).length,
         raw_content: rawContent,
       })
       .select("id")
