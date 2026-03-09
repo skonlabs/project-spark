@@ -547,6 +547,7 @@ export default function ContentPage() {
                               <div className="ml-6 space-y-0.5">
                                 {folder.items.map((item) => {
                                   const status = STATUS_CONFIG[item.status] ?? STATUS_CONFIG.pending;
+                                  const isAnalyzed = item.status === "analyzed";
                                   return (
                                     <button
                                       key={item.id}
@@ -555,13 +556,18 @@ export default function ContentPage() {
                                     >
                                       <FileText className="h-3.5 w-3.5 text-muted-foreground/50 flex-shrink-0" />
                                       <span className="text-sm flex-1 truncate group-hover:text-primary transition-colors">{item.title}</span>
-                                      {item.status === "processing" ? (
-                                        <Loader2 className="h-3 w-3 text-blue-400 animate-spin" />
-                                      ) : item.score !== null ? (
-                                        <span className={`text-[10px] font-bold tabular-nums font-mono ${scoreColor(item.score)}`}>{item.score}</span>
-                                      ) : (
-                                        <span className="text-[10px] text-muted-foreground/30">—</span>
-                                      )}
+                                      {/* Status */}
+                                      <span className={`inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full flex-shrink-0 ${status.color}`}>
+                                        {status.icon} <span className="hidden sm:inline">{status.label}</span>
+                                      </span>
+                                      {/* Score */}
+                                      <ScoreBadge score={item.score} />
+                                      {/* Pipeline */}
+                                      <div className="flex items-center gap-0.5 w-16 flex-shrink-0">
+                                        <div className={`h-1.5 flex-1 rounded-full ${isAnalyzed ? "bg-green-400" : item.status === "processing" ? "bg-blue-400 animate-pulse" : "bg-muted"}`} title="Analyzed" />
+                                        <div className="h-1.5 flex-1 rounded-full bg-muted" title="Generated" />
+                                        <div className="h-1.5 flex-1 rounded-full bg-muted" title="Published" />
+                                      </div>
                                       <ArrowRight className="h-3 w-3 text-muted-foreground/30 opacity-0 group-hover:opacity-100 transition-opacity" />
                                     </button>
                                   );
