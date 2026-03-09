@@ -23,9 +23,9 @@ const DEMO_MEMBERS = [
 ];
 
 const ROLE_INFO = {
-  owner: { label: "Owner", color: "text-purple-400 bg-purple-500/10 border-purple-500/15", permissions: ["Full access", "Billing management", "Member management", "Delete workspace"] },
-  admin: { label: "Admin", color: "text-blue-400 bg-blue-500/10 border-blue-500/15", permissions: ["Full access", "Member management", "All publishing"] },
-  editor: { label: "Editor", color: "text-emerald-400 bg-emerald-500/10 border-emerald-500/15", permissions: ["Create & edit content", "Run simulations", "Publish content"] },
+  owner: { label: "Owner", color: "text-primary bg-primary/10 border-primary/15", permissions: ["Full access", "Billing management", "Member management", "Delete workspace"] },
+  admin: { label: "Admin", color: "text-amber-600 bg-amber-500/10 border-amber-500/15", permissions: ["Full access", "Member management", "All publishing"] },
+  editor: { label: "Editor", color: "text-emerald-600 bg-emerald-500/10 border-emerald-500/15", permissions: ["Create & edit content", "Run simulations", "Publish content"] },
   viewer: { label: "Viewer", color: "text-muted-foreground bg-muted/60 border-border/60", permissions: ["View dashboards", "View reports", "No publishing"] },
 };
 
