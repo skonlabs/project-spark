@@ -3,7 +3,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 
 import { AlertTriangle, CheckCircle2, Loader2, Package2, Plus, Swords, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
-import { MOCK_PRODUCTS } from "@/data/products";
+import { useContent } from "@/contexts/ContentContext";
 
 const COMPETITOR_DATA: Record<string, Array<{ name: string; share: number; isYou: boolean; strengths: string[]; gaps: string[] }>> = {
   "product-gaeo": [
@@ -24,7 +24,8 @@ const COMPETITOR_DATA: Record<string, Array<{ name: string; share: number; isYou
 const COLORS = ["hsl(32, 95%, 44%)", "#ef4444", "#f97316", "#eab308", "#6b7280"];
 
 export default function CompetitivePage() {
-  const [selectedProduct, setSelectedProduct] = useState(MOCK_PRODUCTS[0].id);
+  const { products } = useContent();
+  const [selectedProduct, setSelectedProduct] = useState(products[0]?.id ?? "");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
   const [newName, setNewName] = useState("");
@@ -77,7 +78,7 @@ export default function CompetitivePage() {
       <div>
         <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-3">Select Product</p>
         <div className="flex gap-2 flex-wrap">
-          {MOCK_PRODUCTS.map((p) => (
+          {products.map((p) => (
             <button key={p.id} onClick={() => setSelectedProduct(p.id)} className={`inline-flex items-center gap-1.5 rounded-xl border px-4 py-2.5 text-sm font-semibold transition-all ${selectedProduct === p.id ? "border-primary/30 bg-primary/10 text-foreground shadow-sm" : "border-border/60 text-muted-foreground hover:text-foreground hover:bg-accent"}`}>
               <Package2 className="h-3.5 w-3.5" /> {p.name}
             </button>
@@ -100,7 +101,7 @@ export default function CompetitivePage() {
       </div>
 
       <div className="section-card p-6">
-        <h2 className="font-bold mb-5 text-sm">AI Share of Voice — {MOCK_PRODUCTS.find((p) => p.id === selectedProduct)?.name}</h2>
+        <h2 className="font-bold mb-5 text-sm">AI Share of Voice — {products.find((p) => p.id === selectedProduct)?.name}</h2>
         <ResponsiveContainer width="100%" height={220}>
           <BarChart data={list} margin={{ top: 0, right: 0, bottom: 0, left: -20 }}>
             <XAxis dataKey="name" tick={{ fontSize: 11, fill: "hsl(215 20.2% 55%)" }} axisLine={false} tickLine={false} />

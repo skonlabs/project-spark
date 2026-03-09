@@ -5,7 +5,7 @@ import {
   Sparkles, Swords, Upload, Zap, Send,
 } from "lucide-react";
 import { motion } from "framer-motion";
-import { MOCK_PRODUCTS, getAllContent, getProductStats, CONTENT_ANALYSIS } from "@/data/products";
+import { useContent } from "@/contexts/ContentContext";
 import { ScoreRing } from "@/components/dashboard/ScoreRing";
 
 function ScoreBadge({ score }: { score: number | null }) {
@@ -26,14 +26,22 @@ function RelativeTime({ iso }: { iso: string }) {
 }
 
 export default function HomePage() {
-  const allContent = getAllContent();
+  const { products, getAnalysis } = useContent();
+
+  // Flatten all content
+  const allContent = products.flatMap(product =>
+    product.folders.flatMap(folder =>
+      folder.items.map(item => ({ product, folder, item }))
+    )
+  );
+
   const recentContent = allContent
     .filter((c) => c.item.status === "analyzed")
     .sort((a, b) => new Date(b.item.ingested_at).getTime() - new Date(a.item.ingested_at).getTime())
     .slice(0, 5);
 
   const criticalItems = allContent.filter((c) => {
-    const a = CONTENT_ANALYSIS[c.item.id];
+    const a = getAnalysis(c.item.id);
     return a?.gaps.some((g) => g.severity === "critical");
   });
 
@@ -54,10 +62,9 @@ export default function HomePage() {
         </Link>
       </motion.div>
 
-      {/* KPI cards — each links to its aggregate dashboard */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          { label: "AI Visibility Score", value: String(avgScore), suffix: "/100", change: "+3 this week", positive: true, icon: BarChart3, href: "/dashboard/analysis" },
+          { label: "AI Visibility Score", value: String(avgScore || 0), suffix: "/100", change: "+3 this week", positive: true, icon: BarChart3, href: "/dashboard/analysis" },
           { label: "Content Library", value: String(totalContent), suffix: ` (${analyzedContent} analyzed)`, change: `${lowScoreItems} need work`, positive: lowScoreItems === 0, icon: FileText, href: "/dashboard/content" },
           { label: "Critical Gaps", value: String(criticalItems.length), suffix: " items", change: "Click to view", positive: criticalItems.length === 0, icon: AlertTriangle, href: "/dashboard/analysis" },
           { label: "Ready to Generate", value: String(lowScoreItems), suffix: " items", change: "Score < 65", positive: false, icon: Sparkles, href: "/dashboard/content/generate" },
@@ -81,7 +88,6 @@ export default function HomePage() {
         })}
       </div>
 
-      {/* Workflow pipeline — connected steps */}
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
         className="rounded-xl border border-border bg-card p-5">
         <h2 className="font-heading font-semibold text-sm mb-4">Your Workflow Pipeline</h2>
@@ -111,12 +117,11 @@ export default function HomePage() {
         </p>
       </motion.div>
 
-      {/* Score + Quick Actions */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.15 }}
           className="bento-card flex flex-col items-center py-8">
           <h2 className="font-heading font-semibold text-sm mb-5">AI Visibility Score</h2>
-          <ScoreRing score={avgScore} size={180} />
+          <ScoreRing score={avgScore || 0} size={180} />
           <Link to="/dashboard/analysis" className="mt-4 inline-flex items-center gap-1 text-xs text-primary hover:underline font-medium">
             Full analysis <ArrowRight className="h-3 w-3" />
           </Link>
@@ -148,7 +153,6 @@ export default function HomePage() {
         </motion.div>
       </div>
 
-      {/* Needs attention */}
       {criticalItems.length > 0 && (
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="section-card">
           <div className="section-card-header">
@@ -174,28 +178,40 @@ export default function HomePage() {
         </motion.div>
       )}
 
-      {/* Recently analyzed */}
-      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="section-card">
-        <div className="section-card-header">
-          <h2 className="font-heading font-semibold text-sm flex items-center gap-2">
-            <Clock className="h-3.5 w-3.5 text-muted-foreground/50" /> Recently Analyzed
-          </h2>
-          <Link to="/dashboard/content" className="text-xs text-primary hover:underline font-medium">View library</Link>
-        </div>
-        <div className="divide-y divide-border/40">
-          {recentContent.map(({ product, folder, item }) => (
-            <Link key={item.id} to={`/dashboard/content/${item.id}`} className="flex items-center gap-3 px-5 py-3 hover:bg-accent/20 transition-colors group">
-              <File className="h-3.5 w-3.5 text-muted-foreground/40 flex-shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium truncate">{item.title}</p>
-                <p className="text-[10px] text-muted-foreground/40">{product.name} / {folder.name} · <RelativeTime iso={item.ingested_at} /></p>
-              </div>
-              <ScoreBadge score={item.score} />
-              <ArrowRight className="h-3 w-3 text-muted-foreground/20 opacity-0 group-hover:opacity-100 transition-opacity" />
-            </Link>
-          ))}
-        </div>
-      </motion.div>
+      {recentContent.length > 0 && (
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="section-card">
+          <div className="section-card-header">
+            <h2 className="font-heading font-semibold text-sm flex items-center gap-2">
+              <Clock className="h-3.5 w-3.5 text-muted-foreground/50" /> Recently Analyzed
+            </h2>
+            <Link to="/dashboard/content" className="text-xs text-primary hover:underline font-medium">View library</Link>
+          </div>
+          <div className="divide-y divide-border/40">
+            {recentContent.map(({ product, folder, item }) => (
+              <Link key={item.id} to={`/dashboard/content/${item.id}`} className="flex items-center gap-3 px-5 py-3 hover:bg-accent/20 transition-colors group">
+                <File className="h-3.5 w-3.5 text-muted-foreground/40 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium truncate">{item.title}</p>
+                  <p className="text-[10px] text-muted-foreground/40">{product.name} / {folder.name} · <RelativeTime iso={item.ingested_at} /></p>
+                </div>
+                <ScoreBadge score={item.score} />
+                <ArrowRight className="h-3 w-3 text-muted-foreground/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </Link>
+            ))}
+          </div>
+        </motion.div>
+      )}
+
+      {allContent.length === 0 && (
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="text-center py-16">
+          <Upload className="h-10 w-10 text-muted-foreground/20 mx-auto mb-4" />
+          <h2 className="font-heading font-semibold text-lg mb-2">No content yet</h2>
+          <p className="text-muted-foreground text-sm mb-4">Start by adding a product and ingesting content to analyze.</p>
+          <Link to="/dashboard/content" className="btn-primary text-sm px-5 py-2.5">
+            <Plus className="h-4 w-4" /> Add Content
+          </Link>
+        </motion.div>
+      )}
     </div>
   );
 }

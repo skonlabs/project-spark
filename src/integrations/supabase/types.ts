@@ -14,7 +14,221 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      content_analysis: {
+        Row: {
+          analyzed_at: string
+          content_item_id: string
+          dimension_scores: Json
+          gaps: Json
+          id: string
+          recommendations: Json
+          score: number
+          user_id: string
+        }
+        Insert: {
+          analyzed_at?: string
+          content_item_id: string
+          dimension_scores?: Json
+          gaps?: Json
+          id?: string
+          recommendations?: Json
+          score?: number
+          user_id: string
+        }
+        Update: {
+          analyzed_at?: string
+          content_item_id?: string
+          dimension_scores?: Json
+          gaps?: Json
+          id?: string
+          recommendations?: Json
+          score?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_analysis_content_item_id_fkey"
+            columns: ["content_item_id"]
+            isOneToOne: true
+            referencedRelation: "content_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      content_items: {
+        Row: {
+          folder_id: string
+          id: string
+          ingested_at: string
+          raw_content: string | null
+          score: number | null
+          source_type: string
+          status: string
+          title: string
+          url: string | null
+          user_id: string
+          word_count: number | null
+        }
+        Insert: {
+          folder_id: string
+          id?: string
+          ingested_at?: string
+          raw_content?: string | null
+          score?: number | null
+          source_type?: string
+          status?: string
+          title: string
+          url?: string | null
+          user_id: string
+          word_count?: number | null
+        }
+        Update: {
+          folder_id?: string
+          id?: string
+          ingested_at?: string
+          raw_content?: string | null
+          score?: number | null
+          source_type?: string
+          status?: string
+          title?: string
+          url?: string | null
+          user_id?: string
+          word_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_items_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "folders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      folders: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          product_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          product_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          product_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "folders_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_prompts: {
+        Row: {
+          added_at: string
+          covered: boolean
+          id: string
+          intent: string
+          product_id: string
+          text: string
+          user_id: string
+        }
+        Insert: {
+          added_at?: string
+          covered?: boolean
+          id?: string
+          intent?: string
+          product_id: string
+          text: string
+          user_id: string
+        }
+        Update: {
+          added_at?: string
+          covered?: boolean
+          id?: string
+          intent?: string
+          product_id?: string
+          text?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_prompts_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      products: {
+        Row: {
+          category: string | null
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          url: string | null
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          url?: string | null
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          url?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          full_name: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          full_name?: string | null
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

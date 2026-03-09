@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { useContent } from "@/contexts/ContentContext";
-import { CONTENT_ANALYSIS } from "@/data/products";
+// Analysis data now comes from useContent context
 import { FolderPicker } from "@/components/dashboard/FolderPicker";
 
 // ─── Status config ────────────────────────────────────────────────────────────
@@ -59,7 +59,7 @@ function scoreColor(score: number | null) {
 export default function ContentPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { products, addContentItem, updateItemStatus, addFolder } = useContent();
+  const { products, addContentItem, updateItemStatus, addFolder, getAnalysis } = useContent();
 
   // View mode
   const [viewMode, setViewMode] = useState<ViewMode>("list");
@@ -107,7 +107,7 @@ export default function ContentPage() {
           productName: p.name,
           folderId: f.id,
           folderName: f.name,
-          hasGaps: CONTENT_ANALYSIS[item.id]?.gaps.some((g) => g.severity === "critical") ?? false,
+          hasGaps: getAnalysis(item.id)?.gaps.some((g) => g.severity === "critical") ?? false,
         }))
       )
     ), [products]);
@@ -179,12 +179,11 @@ export default function ContentPage() {
   }
 
   // ── Ingest handler ────────────────────────────────────────────────────────
-  function ingest(title: string, url: string, sourceType: "url" | "file" | "crawl") {
+  async function ingest(title: string, url: string, sourceType: "url" | "file" | "crawl") {
     if (!selectedProduct || !selectedFolder) { toast.error("Select a product and folder first."); return; }
-    const itemId = addContentItem({
+    const itemId = await addContentItem({
       productId: selectedProduct.id, folderId: selectedFolder.id, title, url, source_type: sourceType,
     });
-    setTimeout(() => updateItemStatus(itemId, "analyzed", Math.floor(Math.random() * 40) + 35), 3000 + Math.random() * 2000);
     return itemId;
   }
 

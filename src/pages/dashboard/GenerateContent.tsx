@@ -5,7 +5,7 @@ import {
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-import { CONTENT_ANALYSIS } from "@/data/products";
+// Analysis data now comes from useContent context
 import { useContent } from "@/contexts/ContentContext";
 
 function ScoreBadge({ score }: { score: number | null }) {
@@ -18,7 +18,7 @@ function ScoreBadge({ score }: { score: number | null }) {
 
 export default function GenerateContentPage() {
   const navigate = useNavigate();
-  const { products } = useContent();
+  const { products, getAnalysis } = useContent();
   const [selectedProductId, setSelectedProductId] = useState(() => products[0]?.id ?? "");
   const [generatingIds, setGeneratingIds] = useState<Set<string>>(new Set());
 
@@ -34,9 +34,9 @@ export default function GenerateContentPage() {
       f.items.map((item) => ({
         ...item,
         folderName: f.name,
-        analysis: CONTENT_ANALYSIS[item.id] ?? null,
-        gapCount: CONTENT_ANALYSIS[item.id]?.gaps.length ?? 0,
-        criticalGaps: CONTENT_ANALYSIS[item.id]?.gaps.filter((g) => g.severity === "critical").length ?? 0,
+        analysis: getAnalysis(item.id),
+        gapCount: getAnalysis(item.id)?.gaps.length ?? 0,
+        criticalGaps: getAnalysis(item.id)?.gaps.filter((g) => g.severity === "critical").length ?? 0,
       }))
     ).filter((i) => i.status === "analyzed")
      .sort((a, b) => (a.score ?? 999) - (b.score ?? 999)); // worst first

@@ -7,7 +7,7 @@ import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { ScoreRing } from "@/components/dashboard/ScoreRing";
 import { ScoreBar } from "@/components/dashboard/ScoreBar";
-import { CONTENT_ANALYSIS } from "@/data/products";
+// Analysis data now comes from useContent context
 import { useContent } from "@/contexts/ContentContext";
 
 const SCORE_DIMENSIONS = [
@@ -32,7 +32,7 @@ function ScoreBadge({ score }: { score: number | null }) {
 
 export default function AnalysisPage() {
   const navigate = useNavigate();
-  const { products, getProductPrompts } = useContent();
+  const { products, getProductPrompts, getAnalysis } = useContent();
   const [selectedProductId, setSelectedProductId] = useState(() => products[0]?.id ?? "");
   const [running, setRunning] = useState(false);
 
@@ -51,9 +51,9 @@ export default function AnalysisPage() {
       f.items.map((item) => ({
         ...item,
         folderName: f.name,
-        analysis: CONTENT_ANALYSIS[item.id] ?? null,
-        gapCount: CONTENT_ANALYSIS[item.id]?.gaps.length ?? 0,
-        criticalGaps: CONTENT_ANALYSIS[item.id]?.gaps.filter((g) => g.severity === "critical").length ?? 0,
+        analysis: getAnalysis(item.id),
+        gapCount: getAnalysis(item.id)?.gaps.length ?? 0,
+        criticalGaps: getAnalysis(item.id)?.gaps.filter((g) => g.severity === "critical").length ?? 0,
       }))
     ).sort((a, b) => (a.score ?? 999) - (b.score ?? 999)); // worst scores first
   }, [selectedProduct]);

@@ -1,6 +1,7 @@
 import { Toaster } from "react-hot-toast";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import Landing from "./pages/Landing";
 import LoginPage from "./pages/auth/Login";
 import RegisterPage from "./pages/auth/Register";
@@ -33,45 +34,62 @@ const queryClient = new QueryClient({
   },
 });
 
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth();
+  if (loading) return <div className="flex h-screen items-center justify-center text-muted-foreground">Loading…</div>;
+  if (!user) return <Navigate to="/auth/login" replace />;
+  return <>{children}</>;
+}
+
+const AppRoutes = () => (
+  <Routes>
+    <Route path="/" element={<Landing />} />
+    <Route path="/auth/login" element={<LoginPage />} />
+    <Route path="/auth/register" element={<RegisterPage />} />
+    <Route path="/dashboard" element={
+      <ProtectedRoute>
+        <ContentProvider><DashboardLayout /></ContentProvider>
+      </ProtectedRoute>
+    }>
+      <Route index element={<HomePage />} />
+      <Route path="overview" element={<OverviewPage />} />
+      <Route path="content" element={<ContentPage />} />
+      <Route path="content/generate" element={<GenerateContentPage />} />
+      <Route path="content/:contentId" element={<ContentDetailPage />} />
+      <Route path="prompts" element={<PromptsPage />} />
+      <Route path="analysis" element={<AnalysisPage />} />
+      <Route path="competitive" element={<CompetitivePage />} />
+      <Route path="simulation" element={<SimulationPage />} />
+      <Route path="monitoring" element={<MonitoringPage />} />
+      <Route path="topics" element={<TopicsPage />} />
+      <Route path="agent" element={<AgentPage />} />
+      <Route path="publish" element={<PublishPage />} />
+      <Route path="projects" element={<ProjectsPage />} />
+      <Route path="settings" element={<SettingsPage />} />
+    </Route>
+    <Route path="*" element={<NotFound />} />
+  </Routes>
+);
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <Toaster
       position="top-right"
       toastOptions={{
         style: {
-          background: "hsl(228 14% 7%)",
-          color: "hsl(210 8% 91%)",
-          border: "1px solid hsl(213 16% 19%)",
+          background: "hsl(var(--card))",
+          color: "hsl(var(--foreground))",
+          border: "1px solid hsl(var(--border))",
           fontSize: "13px",
         },
-        success: { iconTheme: { primary: "#33D17A", secondary: "#fff" } },
+        success: { iconTheme: { primary: "hsl(var(--primary))", secondary: "#fff" } },
         error: { iconTheme: { primary: "#FF5C5C", secondary: "#fff" } },
       }}
     />
     <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Landing />} />
-        <Route path="/auth/login" element={<LoginPage />} />
-        <Route path="/auth/register" element={<RegisterPage />} />
-        <Route path="/dashboard" element={<ContentProvider><DashboardLayout /></ContentProvider>}>
-          <Route index element={<HomePage />} />
-          <Route path="overview" element={<OverviewPage />} />
-          <Route path="content" element={<ContentPage />} />
-          <Route path="content/generate" element={<GenerateContentPage />} />
-          <Route path="content/:contentId" element={<ContentDetailPage />} />
-          <Route path="prompts" element={<PromptsPage />} />
-          <Route path="analysis" element={<AnalysisPage />} />
-          <Route path="competitive" element={<CompetitivePage />} />
-          <Route path="simulation" element={<SimulationPage />} />
-          <Route path="monitoring" element={<MonitoringPage />} />
-          <Route path="topics" element={<TopicsPage />} />
-          <Route path="agent" element={<AgentPage />} />
-          <Route path="publish" element={<PublishPage />} />
-          <Route path="projects" element={<ProjectsPage />} />
-          <Route path="settings" element={<SettingsPage />} />
-        </Route>
-        <Route path="*" element={<NotFound />} />
-      </Routes>
+      <AuthProvider>
+        <AppRoutes />
+      </AuthProvider>
     </BrowserRouter>
   </QueryClientProvider>
 );

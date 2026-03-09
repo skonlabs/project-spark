@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   BarChart2, Bot, Globe, LayoutDashboard, LineChart, LogOut, Menu,
@@ -7,6 +7,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
 import { useContent } from "@/contexts/ContentContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 type IngestMethod = "url" | "file";
 
@@ -14,7 +15,7 @@ export default function DashboardLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const { products, addContentItem, updateItemStatus } = useContent();
-  const [user, setUser] = useState<{ full_name: string; email: string } | null>(null);
+  const { profile, signOut } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const [showIngest, setShowIngest] = useState(false);
@@ -23,27 +24,27 @@ export default function DashboardLayout() {
   const [ingestUrl, setIngestUrl] = useState("");
   const [ingestLoading, setIngestLoading] = useState(false);
 
-  useEffect(() => {
-    const userData = localStorage.getItem("user");
-    if (!userData) { navigate("/auth/login"); return; }
-    setUser(JSON.parse(userData));
-  }, [navigate]);
-
-  function handleIngest() {
+  async function handleIngest() {
     if (!ingestTarget || (!ingestUrl && ingestMethod === "url")) return;
     setIngestLoading(true);
-    setTimeout(() => {
+    try {
       const title = ingestMethod === "url"
         ? (ingestUrl.split("/").filter(Boolean).pop() ?? "Untitled").replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
         : "Uploaded Document";
-      const itemId = addContentItem({ productId: ingestTarget.productId, folderId: ingestTarget.folderId, title, url: ingestMethod === "url" ? ingestUrl : "#", source_type: ingestMethod === "url" ? "url" : "file" });
-      setTimeout(() => updateItemStatus(itemId, "analyzed", Math.floor(Math.random() * 35) + 35), 3000);
+      const itemId = await addContentItem({ productId: ingestTarget.productId, folderId: ingestTarget.folderId, title, url: ingestMethod === "url" ? ingestUrl : "#", source_type: ingestMethod === "url" ? "url" : "file" });
       setIngestLoading(false); setShowIngest(false);
       toast.success(`"${title}" added — analysing now…`);
       navigate(`/dashboard/content/${itemId}`);
-    }, 1200);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to ingest");
+      setIngestLoading(false);
+    }
   }
-  function handleLogout() { localStorage.clear(); navigate("/auth/login"); }
+
+  async function handleLogout() {
+    await signOut();
+    navigate("/auth/login");
+  }
 
   const isRouteActive = (path: string) => location.pathname === path || location.pathname.startsWith(path + "/");
 
@@ -80,9 +81,7 @@ export default function DashboardLayout() {
 
   return (
     <div className="flex h-screen bg-background text-foreground overflow-hidden">
-      {/* ── Sidebar ──────────────────────────────────────── */}
       <aside className={`${sidebarOpen ? "w-56" : "w-0 overflow-hidden"} flex-shrink-0 border-r border-sidebar-border flex flex-col transition-all duration-200 bg-[hsl(var(--sidebar-background))]`}>
-        {/* Logo */}
         <div className="h-12 flex items-center gap-2 px-4 border-b border-sidebar-border flex-shrink-0">
           <Link to="/dashboard" className="flex items-center gap-2">
             <div className="h-6 w-6 rounded-md bg-primary flex items-center justify-center">
@@ -92,7 +91,6 @@ export default function DashboardLayout() {
           </Link>
         </div>
 
-        {/* Navigation */}
         <div className="flex-1 overflow-y-auto py-3 px-2 space-y-5">
           {navSections.map((section) => (
             <div key={section.label}>
@@ -117,15 +115,13 @@ export default function DashboardLayout() {
           ))}
         </div>
 
-        {/* User footer */}
         <div className="border-t border-sidebar-border p-2.5 flex-shrink-0">
           <div className="flex items-center gap-2 px-1.5 py-1.5">
             <div className="h-7 w-7 rounded-full bg-accent flex items-center justify-center flex-shrink-0 border border-border">
               <User className="h-3 w-3 text-muted-foreground" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-[11px] font-medium truncate">{user?.full_name || "User"}</p>
-              <p className="text-[9px] text-muted-foreground/40 truncate">{user?.email}</p>
+              <p className="text-[11px] font-medium truncate">{profile?.full_name || "User"}</p>
             </div>
             <button onClick={handleLogout} className="text-muted-foreground/30 hover:text-foreground flex-shrink-0 transition-colors" title="Sign out">
               <LogOut className="h-3 w-3" />
@@ -134,7 +130,6 @@ export default function DashboardLayout() {
         </div>
       </aside>
 
-      {/* ── Main ──────────────────────────────────────────── */}
       <main className="flex-1 overflow-y-auto min-w-0 bg-background">
         <div className="h-11 border-b border-border flex items-center px-4 flex-shrink-0 bg-background/80 backdrop-blur-sm sticky top-0 z-10">
           <button onClick={() => setSidebarOpen(!sidebarOpen)} className="text-muted-foreground hover:text-foreground transition-colors mr-3">
@@ -158,7 +153,6 @@ export default function DashboardLayout() {
         </AnimatePresence>
       </main>
 
-      {/* ── Ingest Modal ──────────────────────────────────── */}
       <AnimatePresence>
         {showIngest && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
