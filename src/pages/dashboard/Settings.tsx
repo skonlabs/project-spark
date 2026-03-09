@@ -234,7 +234,7 @@ export default function SettingsPage() {
                     className="flex-1 rounded-xl border border-input bg-background/80 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring/50"
                   />
                   <button disabled={!newKeyName} onClick={() => { toast.success("API key created!"); setNewKeyName(""); }}
-                    className="rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 px-5 py-2.5 text-sm font-bold text-white disabled:opacity-60 flex items-center gap-2 shadow-md shadow-primary/20"
+                    className="btn-primary rounded-xl px-5 py-2.5 text-sm font-bold disabled:opacity-60 flex items-center gap-2"
                   >
                     <Plus className="h-4 w-4" /> Generate
                   </button>
