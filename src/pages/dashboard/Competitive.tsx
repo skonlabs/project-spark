@@ -120,7 +120,7 @@ export default function CompetitivePage() {
           >
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2.5">
-                <div className="h-3 w-3 rounded-full flex-shrink-0" style={{ background: comp.isYou ? "#6366f1" : COLORS[Math.min(i + 1, COLORS.length - 1)] }} />
+                <div className="h-3 w-3 rounded-full flex-shrink-0" style={{ background: comp.isYou ? "hsl(32, 95%, 44%)" : COLORS[Math.min(i + 1, COLORS.length - 1)] }} />
                 <span className="font-bold text-sm">{comp.name}</span>
                 {comp.isYou && <span className="text-[10px] bg-primary/15 text-primary px-2 py-0.5 rounded-full font-bold border border-primary/20">YOU</span>}
               </div>
