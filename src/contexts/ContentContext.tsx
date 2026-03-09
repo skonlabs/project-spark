@@ -11,45 +11,11 @@ import {
   type ProductPrompt,
   type LLMIntentType,
 } from "@/data/products";
+import { analyzeContentQuality } from "@/lib/ingest";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 let _nextPromptId = 100;
-
-function generateMockAnalysis(item: ContentItem): ContentAnalysis {
-  const score = Math.floor(Math.random() * 30) + 35;
-  return {
-    score,
-    analyzed_at: new Date().toISOString(),
-    gaps: [
-      {
-        id: "g1",
-        label: "Missing entity definition",
-        description: 'No clear "X is Y" statement found in the introduction.',
-        severity: "critical",
-        fix: "Add a one-sentence entity definition in the first paragraph.",
-      },
-      {
-        id: "g2",
-        label: "No FAQ section",
-        description: "FAQ content is cited 3.2× more often by LLMs.",
-        severity: "high",
-        fix: "Add 5–7 Q&A pairs covering common user questions.",
-      },
-    ],
-    dimension_scores: [
-      { label: "Entity Clarity", score: Math.floor(score * 0.8), max: 100 },
-      { label: "Structure Quality", score: Math.floor(score * 0.6), max: 100 },
-      { label: "Educational Authority", score: Math.floor(score * 0.5), max: 100 },
-      { label: "Prompt Coverage", score: Math.floor(score * 0.3), max: 100 },
-    ],
-    recommendations: [
-      { action: `Add a clear entity definition to "${item.title}"`, impact: 9 },
-      { action: "Add FAQ section with 5–7 Q&A pairs", impact: 7 },
-      { action: "Add comparison table vs. alternatives", impact: 6 },
-    ],
-  };
-}
 
 // ─── Context shape ─────────────────────────────────────────────────────────────
 
@@ -66,6 +32,10 @@ interface ContentContextValue {
     word_count?: number;
   }) => string;
   updateItemStatus: (contentId: string, status: ContentItem["status"], score?: number) => void;
+  /** Finalize ingestion: store extracted content, run quality analysis, set status to analyzed */
+  finalizeIngestion: (contentId: string, rawContent: string, wordCount: number, title: string) => void;
+  /** Mark an item as failed/errored */
+  markIngestionError: (contentId: string) => void;
   addFolder: (productId: string, folderName: string) => string;
   // Prompt database — owned by context so changes trigger re-renders everywhere
   getProductPrompts: (productId: string) => ProductPrompt[];
@@ -182,18 +152,49 @@ export function ContentProvider({ children }: { children: ReactNode }) {
           })),
         }))
       );
-
-      // Generate mock analysis result separately (not inside setProducts updater)
-      if (status === "analyzed") {
-        const title = itemTitlesRef.current[contentId] ?? "Ingested Content";
-        setDynamicAnalysis((prev) => ({
-          ...prev,
-          [contentId]: generateMockAnalysis({ id: contentId, title } as ContentItem),
-        }));
-      }
     },
     []
   );
+
+  const finalizeIngestion = useCallback(
+    (contentId: string, rawContent: string, wordCount: number, title: string) => {
+      // Store raw content and word count on the item
+      setProducts((prev) =>
+        prev.map((p) => ({
+          ...p,
+          folders: p.folders.map((f) => ({
+            ...f,
+            items: f.items.map((item) => {
+              if (item.id !== contentId) return item;
+              return { ...item, status: "analyzed" as const, word_count: wordCount, raw_content: rawContent };
+            }),
+          })),
+        }))
+      );
+
+      // Run real quality analysis on the actual content
+      const analysis = analyzeContentQuality(rawContent, title);
+      setDynamicAnalysis((prev) => ({ ...prev, [contentId]: analysis }));
+
+      // Keep title ref up to date
+      itemTitlesRef.current[contentId] = title;
+    },
+    []
+  );
+
+  const markIngestionError = useCallback((contentId: string) => {
+    setProducts((prev) =>
+      prev.map((p) => ({
+        ...p,
+        folders: p.folders.map((f) => ({
+          ...f,
+          items: f.items.map((item) =>
+            item.id === contentId ? { ...item, status: "error" as const } : item
+          ),
+        })),
+      }))
+    );
+  }, []);
 
   const addFolder = useCallback((productId: string, folderName: string): string => {
     const folderId = `folder-${Date.now()}`;
@@ -239,6 +240,8 @@ export function ContentProvider({ children }: { children: ReactNode }) {
         findContent,
         addContentItem,
         updateItemStatus,
+        finalizeIngestion,
+        markIngestionError,
         addFolder,
         getProductPrompts,
         addPromptsToProduct,

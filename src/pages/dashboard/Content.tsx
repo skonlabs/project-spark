@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useDropzone } from "react-dropzone";
 import { useNavigate } from "react-router-dom";
 import {
@@ -8,6 +8,15 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { useContent } from "@/contexts/ContentContext";
+import {
+  extractFileContent,
+  fetchUrlContent,
+  fetchGitHubRepo,
+  simulateGitRepoIngest,
+  simulateCloudIngest,
+  simulateCmsIngest,
+  fetchApiContent,
+} from "@/lib/ingest";
 
 const statusIcon: Record<string, React.ReactNode> = {
   analyzed: <CheckCircle2 className="h-4 w-4 text-green-400" />,
@@ -17,6 +26,13 @@ const statusIcon: Record<string, React.ReactNode> = {
 };
 
 type IngestTab = "upload" | "url" | "crawl" | "git" | "cloud" | "cms" | "api";
+
+interface IngestingItem {
+  id: string;
+  title: string;
+  stage: "fetching" | "parsing" | "analyzing" | "done" | "error";
+  stageLabel: string;
+}
 
 const CMS_OPTIONS = [
   { id: "wordpress", name: "WordPress", description: "Connect to a WordPress site via REST API" },
@@ -53,7 +69,7 @@ const NEW_FOLDER_SENTINEL = "__new__";
 
 export default function ContentPage() {
   const navigate = useNavigate();
-  const { products, addContentItem, updateItemStatus, addFolder } = useContent();
+  const { products, addContentItem, finalizeIngestion, markIngestionError, addFolder } = useContent();
 
   const [activeTab, setActiveTab] = useState<IngestTab>("upload");
   const [urlInput, setUrlInput] = useState("");
@@ -67,6 +83,9 @@ export default function ContentPage() {
   const [cmsApiKey, setCmsApiKey] = useState("");
   const [apiEndpoint, setApiEndpoint] = useState("");
   const [apiKey, setApiKey] = useState("");
+
+  // Active ingestion jobs (for progress UI)
+  const [ingestingItems, setIngestingItems] = useState<IngestingItem[]>([]);
 
   const defaultProduct = products[0];
   const [selectedProductId, setSelectedProductId] = useState(defaultProduct?.id ?? "");
@@ -110,30 +129,79 @@ export default function ContentPage() {
     toast.success(`Folder "${name}" created`);
   }
 
-  function ingest(
-    title: string,
-    url: string,
-    sourceType: "url" | "file" | "crawl" | "api" | "cms",
-  ) {
-    if (!selectedProduct || !selectedFolder) {
-      toast.error("Select a product and folder first.");
-      return;
-    }
-    const itemId = addContentItem({
-      productId: selectedProduct.id,
-      folderId: selectedFolder.id,
-      title,
-      url,
-      source_type: sourceType,
-    });
-    // Simulate analysis completing after 3–5s
-    const delay = 3000 + Math.random() * 2000;
-    setTimeout(() => {
-      updateItemStatus(itemId, "analyzed", Math.floor(Math.random() * 40) + 35);
-    }, delay);
-    toast.success(`"${title}" added to ${selectedFolder.name} — analysing…`);
-    navigate(`/dashboard/content/${itemId}`);
+  function updateIngestingItem(id: string, updates: Partial<IngestingItem>) {
+    setIngestingItems((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, ...updates } : item))
+    );
   }
+
+  function removeIngestingItem(id: string) {
+    setTimeout(() => {
+      setIngestingItems((prev) => prev.filter((item) => item.id !== id));
+    }, 3000);
+  }
+
+  /**
+   * Core async ingestion runner. Creates a content item immediately (processing state),
+   * then runs the fetcher, finalizes with real content or marks error.
+   */
+  const runIngest = useCallback(
+    async (
+      title: string,
+      url: string,
+      sourceType: "url" | "file" | "crawl" | "api" | "cms",
+      fetcher: () => Promise<{ title: string; content: string; wordCount: number }>
+    ) => {
+      if (!selectedProduct || !selectedFolder) {
+        toast.error("Select a product and folder first.");
+        return;
+      }
+
+      const itemId = addContentItem({
+        productId: selectedProduct.id,
+        folderId: selectedFolder.id,
+        title,
+        url,
+        source_type: sourceType,
+      });
+
+      const ingestItem: IngestingItem = {
+        id: itemId,
+        title,
+        stage: "fetching",
+        stageLabel: "Fetching content…",
+      };
+      setIngestingItems((prev) => [ingestItem, ...prev]);
+
+      try {
+        updateIngestingItem(itemId, { stage: "fetching", stageLabel: "Fetching content…" });
+
+        const result = await fetcher();
+
+        updateIngestingItem(itemId, { stage: "parsing", stageLabel: "Parsing & cleaning…" });
+        // Small delay to show parsing stage
+        await new Promise((r) => setTimeout(r, 400));
+
+        updateIngestingItem(itemId, { stage: "analyzing", stageLabel: "Running quality analysis…" });
+        // Small delay to show analysis stage
+        await new Promise((r) => setTimeout(r, 600));
+
+        finalizeIngestion(itemId, result.content, result.wordCount, result.title || title);
+        updateIngestingItem(itemId, { stage: "done", stageLabel: "Done!", title: result.title || title });
+
+        toast.success(`"${result.title || title}" analysed and ready`);
+        removeIngestingItem(itemId);
+        navigate(`/dashboard/content/${itemId}`);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Unknown error";
+        markIngestionError(itemId);
+        updateIngestingItem(itemId, { stage: "error", stageLabel: `Error: ${message}` });
+        toast.error(`Failed to ingest "${title}": ${message}`);
+        removeIngestingItem(itemId);
+      }
+    },
+    [selectedProduct, selectedFolder, addContentItem, finalizeIngestion, markIngestionError, navigate]
+  );
 
   const tabs: { id: IngestTab; label: string; icon: React.ReactNode }[] = [
     { id: "upload", label: "File Upload", icon: <Upload className="h-3.5 w-3.5" /> },
@@ -145,12 +213,40 @@ export default function ContentPage() {
     { id: "api", label: "API", icon: <Zap className="h-3.5 w-3.5" /> },
   ];
 
+  const stageColors: Record<string, string> = {
+    fetching: "text-blue-400",
+    parsing: "text-yellow-400",
+    analyzing: "text-purple-400",
+    done: "text-green-400",
+    error: "text-red-400",
+  };
+
   return (
     <div className="p-6 space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Content Ingestion</h1>
-        <p className="text-muted-foreground text-sm mt-0.5">Import content from any source to analyse and optimise</p>
+        <p className="text-muted-foreground text-sm mt-0.5">Import content from any source to analyse and optimise for AI visibility</p>
       </div>
+
+      {/* Active ingestion progress */}
+      {ingestingItems.length > 0 && (
+        <div className="rounded-xl border border-border bg-card p-4 space-y-2">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Active Ingestions</p>
+          {ingestingItems.map((item) => (
+            <div key={item.id} className="flex items-center gap-3 py-1.5 px-2 rounded-lg bg-muted/30">
+              {item.stage === "done" ? (
+                <CheckCircle2 className="h-4 w-4 text-green-400 flex-shrink-0" />
+              ) : item.stage === "error" ? (
+                <AlertCircle className="h-4 w-4 text-red-400 flex-shrink-0" />
+              ) : (
+                <Loader2 className="h-4 w-4 text-blue-400 animate-spin flex-shrink-0" />
+              )}
+              <span className="text-sm flex-1 truncate font-medium">{item.title}</span>
+              <span className={`text-xs ${stageColors[item.stage]}`}>{item.stageLabel}</span>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Target selector */}
       <div className="rounded-xl border border-border bg-card p-4 space-y-3">
@@ -239,7 +335,7 @@ export default function ContentPage() {
           ))}
         </div>
 
-        {/* File Upload */}
+        {/* ── File Upload ── */}
         {activeTab === "upload" && (
           <div className="space-y-4">
             <div
@@ -252,6 +348,7 @@ export default function ContentPage() {
               <Upload className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
               <p className="font-medium mb-1">Drop files here or click to select</p>
               <p className="text-sm text-muted-foreground">PDF, DOCX, TXT, Markdown, HTML, CSV, JSON — up to 50MB each</p>
+              <p className="text-xs text-muted-foreground mt-1">TXT, MD, HTML, CSV, JSON: full content extracted · PDF, DOCX: metadata + size estimation</p>
             </div>
             {acceptedFiles.length > 0 && (
               <div className="space-y-2">
@@ -264,37 +361,49 @@ export default function ContentPage() {
                 ))}
                 <button
                   onClick={() => {
-                    const first = acceptedFiles[0];
-                    ingest(first.name.replace(/\.\w+$/, ""), "#", "file");
+                    acceptedFiles.forEach((file) => {
+                      const title = file.name.replace(/\.\w+$/, "");
+                      runIngest(title, "#", "file", () => extractFileContent(file));
+                    });
                   }}
                   className="w-full rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground flex items-center justify-center gap-2"
                 >
-                  <Upload className="h-4 w-4" /> Upload & Analyse {acceptedFiles.length} file(s)
+                  <Upload className="h-4 w-4" /> Upload & Analyse {acceptedFiles.length} file{acceptedFiles.length !== 1 ? "s" : ""}
                 </button>
               </div>
             )}
           </div>
         )}
 
-        {/* URL / Sitemap */}
+        {/* ── URL / Sitemap ── */}
         {activeTab === "url" && (
           <div className="space-y-4">
             <div>
               <label className="text-sm font-medium mb-1.5 block">Page URL or Sitemap</label>
-              <p className="text-xs text-muted-foreground mb-2">Enter a single page URL or a sitemap.xml URL to bulk-import all pages</p>
+              <p className="text-xs text-muted-foreground mb-2">
+                Enter a single page URL or a sitemap.xml URL to import. Content is fetched in real time via a CORS proxy.
+              </p>
               <div className="flex gap-2">
                 <input
                   value={urlInput}
                   onChange={(e) => setUrlInput(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter" && urlInput) { ingest(titleFromUrl(urlInput), urlInput, "url"); setUrlInput(""); }
+                    if (e.key === "Enter" && urlInput) {
+                      const url = urlInput;
+                      setUrlInput("");
+                      runIngest(titleFromUrl(url), url, "url", () => fetchUrlContent(url));
+                    }
                   }}
                   placeholder="https://example.com/page or https://example.com/sitemap.xml"
                   className="flex-1 rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
                 />
                 <button
                   disabled={!urlInput}
-                  onClick={() => { ingest(titleFromUrl(urlInput), urlInput, "url"); setUrlInput(""); }}
+                  onClick={() => {
+                    const url = urlInput;
+                    setUrlInput("");
+                    runIngest(titleFromUrl(url), url, "url", () => fetchUrlContent(url));
+                  }}
                   className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60"
                 >
                   Ingest
@@ -304,11 +413,14 @@ export default function ContentPage() {
           </div>
         )}
 
-        {/* Web Crawl */}
+        {/* ── Web Crawl ── */}
         {activeTab === "crawl" && (
           <div className="space-y-4">
             <div>
               <label className="text-sm font-medium mb-1.5 block">Website URL</label>
+              <p className="text-xs text-muted-foreground mb-2">
+                The starting URL will be fetched and parsed. Full recursive crawling requires the GAEO server-side agent.
+              </p>
               <input
                 value={crawlUrl}
                 onChange={(e) => setCrawlUrl(e.target.value)}
@@ -330,7 +442,11 @@ export default function ContentPage() {
             </div>
             <button
               disabled={!crawlUrl}
-              onClick={() => { ingest(`Crawl: ${titleFromUrl(crawlUrl)}`, crawlUrl, "crawl"); setCrawlUrl(""); }}
+              onClick={() => {
+                const url = crawlUrl;
+                setCrawlUrl("");
+                runIngest(`Crawl: ${titleFromUrl(url)}`, url, "crawl", () => fetchUrlContent(url));
+              }}
               className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60 flex items-center gap-2"
             >
               <Globe className="h-4 w-4" /> Start Crawl
@@ -338,7 +454,7 @@ export default function ContentPage() {
           </div>
         )}
 
-        {/* Git Repos */}
+        {/* ── Git Repos ── */}
         {activeTab === "git" && (
           <div className="space-y-4">
             <div>
@@ -366,13 +482,25 @@ export default function ContentPage() {
                 className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
               />
             </div>
-            <p className="text-xs text-muted-foreground">Ingests README, docs/, wiki, and markdown files from the repository</p>
+            <p className="text-xs text-muted-foreground">
+              {gitPlatform === "github"
+                ? "GitHub: fetches README via the public API (no auth needed for public repos)"
+                : `${selectedGitOption.name}: ingests README and documentation files`}
+            </p>
             <button
               disabled={!gitUrl}
               onClick={() => {
-                const repoName = gitUrl.split("/").slice(-2).join(" / ");
-                ingest(`${selectedGitOption.name}: ${repoName}`, gitUrl, "api");
+                const url = gitUrl;
+                const platform = selectedGitOption.name;
+                const repoName = url.split("/").slice(-2).join(" / ");
                 setGitUrl("");
+                if (gitPlatform === "github") {
+                  runIngest(`${repoName}`, url, "api", () => fetchGitHubRepo(url));
+                } else {
+                  runIngest(`${platform}: ${repoName}`, url, "api", async () =>
+                    simulateGitRepoIngest(url, platform)
+                  );
+                }
               }}
               className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60 flex items-center gap-2"
             >
@@ -381,7 +509,7 @@ export default function ContentPage() {
           </div>
         )}
 
-        {/* Cloud Storage */}
+        {/* ── Cloud Storage ── */}
         {activeTab === "cloud" && (
           <div className="space-y-4">
             <div>
@@ -404,11 +532,16 @@ export default function ContentPage() {
             <div className="rounded-xl border border-dashed border-border p-6 text-center">
               <Cloud className="h-8 w-8 text-muted-foreground/30 mx-auto mb-2" />
               <p className="text-sm font-medium mb-1">Connect {CLOUD_OPTIONS.find((c) => c.id === cloudProvider)?.name}</p>
-              <p className="text-xs text-muted-foreground mb-3">Authorise GAEO to access your cloud storage and select folders to sync</p>
+              <p className="text-xs text-muted-foreground mb-3">
+                Authorise GAEO to access your cloud storage and select folders to sync.
+                OAuth flow runs on the GAEO server — content is simulated for this preview.
+              </p>
               <button
                 onClick={() => {
                   const provider = CLOUD_OPTIONS.find((c) => c.id === cloudProvider)!;
-                  ingest(`${provider.name} Import`, "#", "api");
+                  runIngest(`${provider.name} Import`, "#", "api", async () =>
+                    simulateCloudIngest(provider.name, "/Documents")
+                  );
                 }}
                 className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
               >
@@ -418,7 +551,7 @@ export default function ContentPage() {
           </div>
         )}
 
-        {/* CMS */}
+        {/* ── CMS ── */}
         {activeTab === "cms" && (
           <div className="space-y-4">
             <div>
@@ -452,8 +585,12 @@ export default function ContentPage() {
               disabled={!cmsUrl || !cmsApiKey}
               onClick={() => {
                 const cmsName = CMS_OPTIONS.find((c) => c.id === selectedCms)!.name;
-                ingest(`${cmsName}: ${titleFromUrl(cmsUrl)}`, cmsUrl, "cms");
-                setCmsUrl(""); setCmsApiKey("");
+                const url = cmsUrl;
+                setCmsUrl("");
+                setCmsApiKey("");
+                runIngest(`${cmsName}: ${titleFromUrl(url)}`, url, "cms", async () =>
+                  simulateCmsIngest(cmsName, url)
+                );
               }}
               className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60 flex items-center gap-2"
             >
@@ -462,10 +599,12 @@ export default function ContentPage() {
           </div>
         )}
 
-        {/* REST API */}
+        {/* ── REST API ── */}
         {activeTab === "api" && (
           <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">Use the GAEO REST API to programmatically ingest content from your own pipelines.</p>
+            <p className="text-sm text-muted-foreground">
+              Fetch content from a REST API endpoint. GAEO will attempt a direct request first, then fall back to a CORS proxy if needed.
+            </p>
             <div className="flex gap-2 items-center rounded-lg border border-border bg-muted/30 px-3 py-2 text-sm font-mono">
               <span className="text-primary text-xs">POST</span>
               <span className="text-muted-foreground">/api/v1/ingest</span>
@@ -494,9 +633,18 @@ export default function ContentPage() {
                 <input value={apiEndpoint} onChange={(e) => setApiEndpoint(e.target.value)}
                   placeholder="https://your-api.com/content-feed"
                   className="flex-1 rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring" />
-                <button disabled={!apiEndpoint}
-                  onClick={() => { ingest(`API: ${titleFromUrl(apiEndpoint)}`, apiEndpoint, "api"); setApiEndpoint(""); }}
-                  className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60">Ingest</button>
+                <button
+                  disabled={!apiEndpoint}
+                  onClick={() => {
+                    const endpoint = apiEndpoint;
+                    setApiEndpoint("");
+                    runIngest(`API: ${titleFromUrl(endpoint)}`, endpoint, "api", () =>
+                      fetchApiContent(endpoint)
+                    );
+                  }}
+                  className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60">
+                  Ingest
+                </button>
               </div>
             </div>
           </div>

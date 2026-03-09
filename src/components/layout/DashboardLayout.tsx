@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   ChevronDown,
@@ -19,16 +19,21 @@ import {
   FileUp,
   MessageSquare,
   BarChart2,
+  CheckCircle2,
+  AlertCircle,
+  Loader2,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { useContent } from "@/contexts/ContentContext";
+import { fetchUrlContent, extractFileContent } from "@/lib/ingest";
 
 type IngestMethod = "url" | "file";
+type IngestStage = "idle" | "fetching" | "parsing" | "analyzing" | "done" | "error";
 
 export default function DashboardLayout() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { products, addContentItem, updateItemStatus, addFolder } = useContent();
+  const { products, addContentItem, finalizeIngestion, markIngestionError, addFolder } = useContent();
   const [user, setUser] = useState<{ full_name: string; email: string } | null>(null);
 
   // Explorer state
@@ -44,7 +49,9 @@ export default function DashboardLayout() {
   const [ingestTarget, setIngestTarget] = useState<{ productId: string; folderId: string; productName: string; folderName: string } | null>(null);
   const [ingestMethod, setIngestMethod] = useState<IngestMethod>("url");
   const [ingestUrl, setIngestUrl] = useState("");
-  const [ingestLoading, setIngestLoading] = useState(false);
+  const [ingestStage, setIngestStage] = useState<IngestStage>("idle");
+  const [ingestStageLabel, setIngestStageLabel] = useState("");
+  const ingestFileRef = useRef<File | null>(null);
 
   // New folder creation state (per-product inline input)
   const [creatingFolderForProduct, setCreatingFolderForProduct] = useState<string | null>(null);
@@ -79,35 +86,73 @@ export default function DashboardLayout() {
     setIngestTarget({ productId, folderId, productName, folderName });
     setIngestUrl("");
     setIngestMethod("url");
+    setIngestStage("idle");
+    setIngestStageLabel("");
+    ingestFileRef.current = null;
     setShowIngest(true);
   }
 
-  function handleIngest() {
+  async function handleIngest() {
     if (!ingestTarget) return;
-    if (!ingestUrl && ingestMethod === "url") return;
-    setIngestLoading(true);
-    setTimeout(() => {
-      const title = ingestMethod === "url"
-        ? (ingestUrl.split("/").filter(Boolean).pop() ?? "Untitled") .replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
-        : "Uploaded Document";
-      const itemId = addContentItem({
-        productId: ingestTarget.productId,
-        folderId: ingestTarget.folderId,
-        title,
-        url: ingestMethod === "url" ? ingestUrl : "#",
-        source_type: ingestMethod === "url" ? "url" : "file",
-      });
-      // Simulate analysis completing after 3s
+    if (ingestMethod === "url" && !ingestUrl) return;
+    if (ingestMethod === "file" && !ingestFileRef.current) return;
+
+    const placeholderTitle =
+      ingestMethod === "url"
+        ? (ingestUrl.split("/").filter(Boolean).pop() ?? "Untitled")
+            .replace(/-/g, " ")
+            .replace(/\b\w/g, (c) => c.toUpperCase())
+        : ingestFileRef.current?.name.replace(/\.\w+$/, "") ?? "Uploaded Document";
+
+    const itemId = addContentItem({
+      productId: ingestTarget.productId,
+      folderId: ingestTarget.folderId,
+      title: placeholderTitle,
+      url: ingestMethod === "url" ? ingestUrl : "#",
+      source_type: ingestMethod === "url" ? "url" : "file",
+    });
+
+    setExpandedFolders((prev) => new Set([...prev, ingestTarget.folderId]));
+    setIngestStage("fetching");
+    setIngestStageLabel("Fetching content…");
+
+    try {
+      let result: { title: string; content: string; wordCount: number };
+
+      if (ingestMethod === "url") {
+        result = await fetchUrlContent(ingestUrl);
+      } else {
+        const file = ingestFileRef.current!;
+        setIngestStageLabel("Reading file…");
+        result = await extractFileContent(file);
+      }
+
+      setIngestStage("parsing");
+      setIngestStageLabel("Parsing…");
+      await new Promise((r) => setTimeout(r, 300));
+
+      setIngestStage("analyzing");
+      setIngestStageLabel("Analysing…");
+      await new Promise((r) => setTimeout(r, 500));
+
+      finalizeIngestion(itemId, result.content, result.wordCount, result.title || placeholderTitle);
+
+      setIngestStage("done");
+      setIngestStageLabel("Done!");
+      toast.success(`"${result.title || placeholderTitle}" analysed and ready`);
+
       setTimeout(() => {
-        updateItemStatus(itemId, "analyzed", Math.floor(Math.random() * 35) + 35);
-      }, 3000);
-      setIngestLoading(false);
-      setShowIngest(false);
-      // Ensure the folder is expanded so the new item is visible
-      setExpandedFolders((prev) => new Set([...prev, ingestTarget.folderId]));
-      toast.success(`"${title}" added to ${ingestTarget.folderName} — analysing now…`);
-      navigate(`/dashboard/content/${itemId}`);
-    }, 1200);
+        setShowIngest(false);
+        setIngestStage("idle");
+        navigate(`/dashboard/content/${itemId}`);
+      }, 600);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      markIngestionError(itemId);
+      setIngestStage("error");
+      setIngestStageLabel(`Error: ${message}`);
+      toast.error(`Ingestion failed: ${message}`);
+    }
   }
 
   function handleCreateFolder(productId: string) {
@@ -485,22 +530,23 @@ export default function DashboardLayout() {
             {ingestMethod === "file" && (
               <div className="border-2 border-dashed border-border rounded-xl p-6 text-center">
                 <FileUp className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                <p className="text-sm font-medium mb-1">Drop files here</p>
+                <p className="text-sm font-medium mb-1">Select a file</p>
                 <p className="text-xs text-muted-foreground mb-3">
-                  PDF, DOCX, MD, TXT supported
+                  TXT, MD, HTML, CSV, JSON (full content) · PDF, DOCX (metadata)
                 </p>
                 <input
                   type="file"
-                  accept=".pdf,.docx,.md,.txt"
+                  accept=".pdf,.docx,.md,.txt,.html,.csv,.json"
                   className="hidden"
-                  id="file-upload"
-                  onChange={() => {
-                    toast.success("File selected — click Ingest to process");
-                    setIngestUrl("file-selected");
+                  id="sidebar-file-upload"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] ?? null;
+                    ingestFileRef.current = file;
+                    if (file) toast.success(`"${file.name}" selected — click Ingest`);
                   }}
                 />
                 <label
-                  htmlFor="file-upload"
+                  htmlFor="sidebar-file-upload"
                   className="cursor-pointer inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-xs font-medium hover:bg-accent transition-colors"
                 >
                   <FileUp className="h-3.5 w-3.5" /> Browse Files
@@ -508,16 +554,39 @@ export default function DashboardLayout() {
               </div>
             )}
 
+            {/* Progress indicator */}
+            {ingestStage !== "idle" && (
+              <div className="flex items-center gap-2 mt-3 px-1">
+                {ingestStage === "done" ? (
+                  <CheckCircle2 className="h-4 w-4 text-green-400 flex-shrink-0" />
+                ) : ingestStage === "error" ? (
+                  <AlertCircle className="h-4 w-4 text-red-400 flex-shrink-0" />
+                ) : (
+                  <Loader2 className="h-4 w-4 text-blue-400 animate-spin flex-shrink-0" />
+                )}
+                <span className={`text-xs ${ingestStage === "error" ? "text-red-400" : ingestStage === "done" ? "text-green-400" : "text-muted-foreground"}`}>
+                  {ingestStageLabel}
+                </span>
+              </div>
+            )}
+
             <div className="flex gap-2 mt-4">
               <button
                 onClick={handleIngest}
-                disabled={(!ingestUrl && ingestMethod === "url") || ingestLoading}
-                className="flex-1 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"
+                disabled={
+                  (ingestMethod === "url" && !ingestUrl) ||
+                  (ingestMethod === "file" && !ingestFileRef.current) ||
+                  (ingestStage !== "idle" && ingestStage !== "error")
+                }
+                className="flex-1 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors flex items-center justify-center gap-1.5"
               >
-                {ingestLoading ? "Ingesting..." : "Ingest & Analyze"}
+                {ingestStage !== "idle" && ingestStage !== "done" && ingestStage !== "error" && (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                )}
+                {ingestStage === "idle" || ingestStage === "error" ? "Ingest & Analyse" : "Ingesting…"}
               </button>
               <button
-                onClick={() => setShowIngest(false)}
+                onClick={() => { setShowIngest(false); setIngestStage("idle"); }}
                 className="rounded-lg border border-border px-4 py-2 text-sm hover:bg-accent transition-colors"
               >
                 Cancel
