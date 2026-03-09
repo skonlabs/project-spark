@@ -6,43 +6,43 @@
 
 @layer base {
   :root {
-    /* Exact spec colors */
-    --background: 228 14% 7%;
-    --foreground: 210 8% 91%;
-    --card: 216 18% 14%;
-    --card-foreground: 210 8% 91%;
-    --popover: 216 18% 14%;
-    --popover-foreground: 210 8% 91%;
-    --primary: 240 87% 72%;
+    /* Mintlify-inspired dark with amber accent */
+    --background: 220 16% 6%;
+    --foreground: 210 20% 92%;
+    --card: 220 14% 10%;
+    --card-foreground: 210 20% 92%;
+    --popover: 220 14% 10%;
+    --popover-foreground: 210 20% 92%;
+    --primary: 32 95% 55%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 225 14% 11%;
-    --secondary-foreground: 210 8% 91%;
-    --muted: 225 12% 11%;
-    --muted-foreground: 213 12% 55%;
-    --accent: 240 20% 16%;
-    --accent-foreground: 210 8% 91%;
-    --destructive: 0 100% 68%;
+    --secondary: 220 14% 9%;
+    --secondary-foreground: 210 20% 92%;
+    --muted: 220 12% 9%;
+    --muted-foreground: 215 10% 48%;
+    --accent: 32 20% 12%;
+    --accent-foreground: 210 20% 92%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
-    --border: 213 16% 19%;
-    --input: 213 16% 19%;
-    --ring: 240 87% 72%;
-    --radius: 0.625rem;
+    --border: 220 12% 14%;
+    --input: 220 12% 14%;
+    --ring: 32 95% 55%;
+    --radius: 0.5rem;
 
     /* Sidebar */
-    --sidebar-background: 228 16% 6%;
-    --sidebar-foreground: 210 8% 85%;
-    --sidebar-primary: 240 87% 72%;
+    --sidebar-background: 220 18% 5%;
+    --sidebar-foreground: 210 10% 78%;
+    --sidebar-primary: 32 95% 55%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 14% 13%;
-    --sidebar-accent-foreground: 210 8% 85%;
-    --sidebar-border: 216 14% 14%;
-    --sidebar-ring: 240 87% 72%;
+    --sidebar-accent: 32 12% 10%;
+    --sidebar-accent-foreground: 210 10% 78%;
+    --sidebar-border: 220 12% 11%;
+    --sidebar-ring: 32 95% 55%;
 
     /* Semantic status */
-    --success: 150 67% 51%;
-    --warning: 40 89% 64%;
-    --error: 0 100% 68%;
-    --info: 214 100% 67%;
+    --success: 158 64% 46%;
+    --warning: 43 96% 56%;
+    --error: 0 84% 60%;
+    --info: 210 100% 62%;
   }
 }
 
@@ -88,12 +88,12 @@
 
   /* ── Cards ────────────────────────────────────── */
   .bento-card {
-    @apply rounded-xl border border-border p-5 transition-all duration-200;
+    @apply rounded-lg border border-border p-5 transition-all duration-200;
     background: hsl(var(--card));
   }
   .bento-card:hover {
-    border-color: hsl(var(--primary) / 0.18);
-    box-shadow: 0 0 0 1px hsl(var(--primary) / 0.05);
+    border-color: hsl(var(--primary) / 0.22);
+    box-shadow: 0 0 20px -8px hsl(var(--primary) / 0.08);
   }
 
   .section-card {
@@ -164,7 +164,7 @@
   /* ── Gradient text ────────────────────────────── */
   .gradient-text {
     @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(135deg, hsl(240 87% 72%), hsl(214 100% 67%));
+    background-image: linear-gradient(135deg, hsl(32 95% 55%), hsl(20 90% 62%));
   }
 
   /* ── Score ring ───────────────────────────────── */
