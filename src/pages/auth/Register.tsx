@@ -20,8 +20,8 @@ export default function RegisterPage() {
     if (error) {
       toast.error(error.message);
     } else {
-      toast.success("Account created! Check your email to confirm, then sign in.");
-      navigate("/auth/login");
+      toast.success("Account created! Welcome to GAEO.");
+      navigate("/dashboard");
     }
     setLoading(false);
   }

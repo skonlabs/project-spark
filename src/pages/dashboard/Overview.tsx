@@ -20,12 +20,18 @@ export default function OverviewPage() {
 
   const currentProduct = products[0];
 
-  function handleCreateProject() {
+  const { addProduct } = useContent();
+
+  async function handleCreateProject() {
     if (!newProject.name) return;
-    toast.success(`Project "${newProject.name}" created!`);
-    setShowCreate(false);
-    setNewProject({ name: "", category: "", url: "" });
-    navigate("/dashboard/projects");
+    try {
+      await addProduct(newProject.name, "", newProject.category, newProject.url);
+      toast.success(`Project "${newProject.name}" created!`);
+      setShowCreate(false);
+      setNewProject({ name: "", category: "", url: "" });
+    } catch (err: any) {
+      toast.error(err.message || "Failed to create project");
+    }
   }
 
   return (
