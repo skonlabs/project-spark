@@ -59,7 +59,7 @@ function scoreColor(score: number | null) {
 export default function ContentPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { products, addContentItem, updateItemStatus, addFolder } = useContent();
+  const { products, addContentItem, updateItemStatus, addFolder, getAnalysis } = useContent();
 
   // View mode
   const [viewMode, setViewMode] = useState<ViewMode>("list");

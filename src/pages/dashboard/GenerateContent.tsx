@@ -18,7 +18,7 @@ function ScoreBadge({ score }: { score: number | null }) {
 
 export default function GenerateContentPage() {
   const navigate = useNavigate();
-  const { products } = useContent();
+  const { products, getAnalysis } = useContent();
   const [selectedProductId, setSelectedProductId] = useState(() => products[0]?.id ?? "");
   const [generatingIds, setGeneratingIds] = useState<Set<string>>(new Set());
 
