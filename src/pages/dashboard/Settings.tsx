@@ -169,7 +169,7 @@ export default function SettingsPage() {
                     <option value="editor">Editor</option><option value="viewer">Viewer</option><option value="admin">Admin</option>
                   </select>
                   <button disabled={!inviteEmail} onClick={() => { toast.success(`Invitation sent to ${inviteEmail}`); setInviteEmail(""); }}
-                    className="rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 px-5 py-2.5 text-sm font-bold text-white disabled:opacity-60 flex items-center gap-2 shadow-md shadow-primary/20"
+                    className="btn-primary rounded-xl px-5 py-2.5 text-sm font-bold disabled:opacity-60 flex items-center gap-2"
                   >
                     <Plus className="h-4 w-4" /> Invite
                   </button>
