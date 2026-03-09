@@ -21,7 +21,7 @@ const COMPETITOR_DATA: Record<string, Array<{ name: string; share: number; isYou
   ],
 };
 
-const COLORS = ["#6366f1", "#ef4444", "#f97316", "#eab308", "#6b7280"];
+const COLORS = ["hsl(32, 95%, 44%)", "#ef4444", "#f97316", "#eab308", "#6b7280"];
 
 export default function CompetitivePage() {
   const [selectedProduct, setSelectedProduct] = useState(MOCK_PRODUCTS[0].id);
