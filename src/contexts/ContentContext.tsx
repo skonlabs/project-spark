@@ -110,7 +110,34 @@ export function ContentProvider({ children }: { children: ReactNode }) {
     [products]
   );
 
-  const addContentItem = useCallback(
+  const updateItemStatus = useCallback(
+    (contentId: string, status: ContentItem["status"], score?: number) => {
+      setProducts((prev) => {
+        let analyzedItem: ContentItem | null = null;
+        const next = prev.map((p) => ({
+          ...p,
+          folders: p.folders.map((f) => ({
+            ...f,
+            items: f.items.map((item) => {
+              if (item.id !== contentId) return item;
+              const updated = { ...item, status, score: score ?? item.score };
+              if (status === "analyzed") analyzedItem = updated;
+              return updated;
+            }),
+          })),
+        }));
+        if (analyzedItem) {
+          setDynamicAnalysis((prev) => ({
+            ...prev,
+            [contentId]: generateMockAnalysis(analyzedItem!),
+          }));
+        }
+        return next;
+      });
+    },
+    []
+  );
+
     ({
       productId,
       folderId,
