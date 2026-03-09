@@ -292,17 +292,25 @@ export default function ContentPage() {
             <button onClick={() => setShowIngest(false)} className="text-xs text-muted-foreground hover:text-foreground">Close</button>
           </div>
 
-          {/* Target selector */}
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="text-xs text-muted-foreground font-medium">Into:</span>
-            <select value={selectedProductId} onChange={(e) => { setSelectedProductId(e.target.value); const p = products.find((p) => p.id === e.target.value); setSelectedFolderId(p?.folders[0]?.id ?? ""); }}
-              className="rounded-lg border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring">
-              {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
-            <span className="text-muted-foreground text-sm">→</span>
-            <select value={selectedFolderId} onChange={(e) => setSelectedFolderId(e.target.value)}
-              className="rounded-lg border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring">
-              {(selectedProduct?.folders ?? []).map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
+          {/* Parent folder picker */}
+          <div>
+            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Parent Folder</label>
+            <select
+              value={`${selectedProductId}::${selectedFolderId}`}
+              onChange={(e) => {
+                const [pId, fId] = e.target.value.split("::");
+                setSelectedProductId(pId);
+                setSelectedFolderId(fId);
+              }}
+              className="w-full max-w-sm rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+            >
+              {products.map((p) =>
+                p.folders.map((f) => (
+                  <option key={f.id} value={`${p.id}::${f.id}`}>
+                    {p.name} / {f.name}
+                  </option>
+                ))
+              )}
             </select>
           </div>
 
