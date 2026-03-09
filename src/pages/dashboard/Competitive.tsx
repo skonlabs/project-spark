@@ -107,7 +107,7 @@ export default function CompetitivePage() {
             <YAxis tick={{ fontSize: 11, fill: "hsl(215 20.2% 55%)" }} axisLine={false} tickLine={false} />
             <Tooltip formatter={(v: number) => [`${v}%`, "Share of Voice"]} contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "12px", fontSize: "12px" }} />
             <Bar dataKey="share" radius={[6, 6, 0, 0]}>
-              {list.map((entry, i) => <Cell key={i} fill={entry.isYou ? "#6366f1" : COLORS[Math.min(i, COLORS.length - 1)]} />)}
+              {list.map((entry, i) => <Cell key={i} fill={entry.isYou ? "hsl(32, 95%, 44%)" : COLORS[Math.min(i, COLORS.length - 1)]} />)}
             </Bar>
           </BarChart>
         </ResponsiveContainer>
