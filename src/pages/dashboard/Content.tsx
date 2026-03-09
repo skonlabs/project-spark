@@ -11,6 +11,7 @@ import {
 import toast from "react-hot-toast";
 import { useContent } from "@/contexts/ContentContext";
 import { CONTENT_ANALYSIS } from "@/data/products";
+import { FolderPicker } from "@/components/dashboard/FolderPicker";
 
 // ─── Status config ────────────────────────────────────────────────────────────
 
@@ -294,24 +295,18 @@ export default function ContentPage() {
 
           {/* Parent folder picker */}
           <div>
-            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Parent Folder</label>
-            <select
-              value={`${selectedProductId}::${selectedFolderId}`}
-              onChange={(e) => {
-                const [pId, fId] = e.target.value.split("::");
+            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Destination Folder</label>
+            <FolderPicker
+              products={products}
+              selectedProductId={selectedProductId}
+              selectedFolderId={selectedFolderId}
+              onSelect={(pId, fId) => {
                 setSelectedProductId(pId);
-                setSelectedFolderId(fId);
+                setSelectedFolderId(fId ?? products.find(p => p.id === pId)?.folders[0]?.id ?? "");
               }}
-              className="w-full max-w-sm rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
-            >
-              {products.map((p) =>
-                p.folders.map((f) => (
-                  <option key={f.id} value={`${p.id}::${f.id}`}>
-                    {p.name} / {f.name}
-                  </option>
-                ))
-              )}
-            </select>
+              placeholder="Select destination folder..."
+              className="max-w-sm"
+            />
           </div>
 
           {/* Method tabs */}
@@ -634,26 +629,15 @@ export default function ContentPage() {
             
             <div className="space-y-4">
               <div>
-                <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Parent Folder</label>
-                <select
-                  value={`${newFolderProductId}::root`}
-                  onChange={(e) => {
-                    const [pId] = e.target.value.split("::");
-                    setNewFolderProductId(pId);
-                  }}
-                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
-                >
-                  {products.map((p) => (
-                    <optgroup key={p.id} label={p.name}>
-                      <option value={`${p.id}::root`}>{p.name} (root)</option>
-                      {p.folders.map((f) => (
-                        <option key={f.id} value={`${p.id}::${f.id}`}>
-                          {p.name} / {f.name}
-                        </option>
-                      ))}
-                    </optgroup>
-                  ))}
-                </select>
+                <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Parent Location</label>
+                <FolderPicker
+                  products={products}
+                  selectedProductId={newFolderProductId}
+                  selectedFolderId={null}
+                  onSelect={(pId) => setNewFolderProductId(pId)}
+                  allowProductRoot
+                  placeholder="Select parent product or folder..."
+                />
               </div>
               
               <div>
