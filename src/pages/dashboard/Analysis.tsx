@@ -32,7 +32,7 @@ function ScoreBadge({ score }: { score: number | null }) {
 
 export default function AnalysisPage() {
   const navigate = useNavigate();
-  const { products } = useContent();
+  const { products, getProductPrompts } = useContent();
   const [selectedProductId, setSelectedProductId] = useState(() => products[0]?.id ?? "");
   const [running, setRunning] = useState(false);
 
