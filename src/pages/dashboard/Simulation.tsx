@@ -271,7 +271,7 @@ export default function SimulationPage() {
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">LLM Simulation Engine</h1>
+        <h1 className="text-2xl font-heading font-bold tracking-tight">LLM Simulation Engine</h1>
         <p className="text-muted-foreground text-sm mt-0.5">Test how your product appears in responses from real AI models</p>
       </div>
 
@@ -421,7 +421,7 @@ export default function SimulationPage() {
                                 <>
                                   <span className="text-xs bg-green-500/15 text-green-400 px-2 py-0.5 rounded-full">Mentioned #{r.rank}</span>
                                   <span className={`text-xs flex items-center gap-1 ${SENTIMENT_COLORS[r.sentiment]}`}>
-                                    {r.sentiment === "positive" ? <TrendingUp className="h-3 w-3" /> : r.sentiment === "negative" ? <TrendingDown className="h-3 w-3" /> : <Minus className="h-3 w-3" />}
+                                    {r.sentiment === "positive" ? <TrendingUp className="h-3 w-3" /> : (r.sentiment as string) === "negative" ? <TrendingDown className="h-3 w-3" /> : <Minus className="h-3 w-3" />}
                                     {r.sentiment}
                                   </span>
                                 </>

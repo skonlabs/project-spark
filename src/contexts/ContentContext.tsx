@@ -65,9 +65,7 @@ interface ContentContextValue {
     word_count?: number;
   }) => string;
   updateItemStatus: (contentId: string, status: ContentItem["status"], score?: number) => void;
-  // Prompt database — owned by context so changes trigger re-renders everywhere
-  getProductPrompts: (productId: string) => ProductPrompt[];
-  addPromptsToProduct: (productId: string, prompts: Omit<ProductPrompt, "id" | "addedAt">[]) => void;
+  addFolder: (productId: string, folderName: string) => string; // returns new folder id
 }
 
 const ContentContext = createContext<ContentContextValue | null>(null);
@@ -136,7 +134,7 @@ export function ContentProvider({ children }: { children: ReactNode }) {
         score: null,
         word_count: word_count ?? null,
         ingested_at: new Date().toISOString(),
-        raw_content: `# ${title}\n\nContent ingested from ${url}.\n\nThis content is being processed and analysed for AI visibility. The analysis will complete shortly.\n\n## About this content\n\nSource: ${url}\nIngested: ${new Date().toLocaleString()}\nType: ${source_type}\n`,
+        raw_content: null, // Will be populated after fetch
       };
 
       setProducts((prev) =>
@@ -152,10 +150,121 @@ export function ContentProvider({ children }: { children: ReactNode }) {
         )
       );
 
+      // Fetch actual content from URL
+      if (source_type === "url" && url && url.startsWith("http")) {
+        fetchUrlContent(url).then((content) => {
+          setProducts((prev) =>
+            prev.map((p) => ({
+              ...p,
+              folders: p.folders.map((f) => ({
+                ...f,
+                items: f.items.map((item) =>
+                  item.id === id
+                    ? { 
+                        ...item, 
+                        raw_content: content,
+                        word_count: content ? content.split(/\s+/).length : null 
+                      }
+                    : item
+                ),
+              })),
+            }))
+          );
+        });
+      } else {
+        // For file uploads or crawl, set placeholder
+        setProducts((prev) =>
+          prev.map((p) => ({
+            ...p,
+            folders: p.folders.map((f) => ({
+              ...f,
+              items: f.items.map((item) =>
+                item.id === id
+                  ? { 
+                      ...item, 
+                      raw_content: `# ${title}\n\nContent ingested from ${source_type === "file" ? "uploaded file" : url}.\n\nThis content is being processed and analysed for AI visibility.\n\n## About this content\n\nSource: ${url}\nIngested: ${new Date().toLocaleString()}\nType: ${source_type}\n`
+                    }
+                  : item
+              ),
+            })),
+          }))
+        );
+      }
+
       return id;
     },
     []
   );
+
+  // Fetch content from URL using a CORS proxy
+  async function fetchUrlContent(url: string): Promise<string | null> {
+    try {
+      // Use allorigins.win as a CORS proxy
+      const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+      const response = await fetch(proxyUrl);
+      
+      if (!response.ok) {
+        console.error("Failed to fetch URL:", response.status);
+        return `# Content from ${url}\n\nUnable to fetch content automatically. The URL may be protected or unavailable.\n\nPlease copy and paste the content manually, or try a different URL.`;
+      }
+      
+      const html = await response.text();
+      
+      // Basic HTML to text conversion
+      const doc = new DOMParser().parseFromString(html, "text/html");
+      
+      // Remove script, style, nav, footer, header elements
+      const elementsToRemove = doc.querySelectorAll("script, style, nav, footer, header, aside, .sidebar, .navigation, .menu, .ad, .advertisement");
+      elementsToRemove.forEach((el) => el.remove());
+      
+      // Get main content area if available
+      const mainContent = doc.querySelector("main, article, .content, .post, .entry-content, #content");
+      const contentEl = mainContent || doc.body;
+      
+      // Extract text with basic formatting
+      let content = "";
+      
+      // Get title
+      const pageTitle = doc.querySelector("h1")?.textContent?.trim() || doc.title || url;
+      content += `# ${pageTitle}\n\n`;
+      
+      // Get meta description if available
+      const metaDesc = doc.querySelector('meta[name="description"]')?.getAttribute("content");
+      if (metaDesc) {
+        content += `> ${metaDesc}\n\n`;
+      }
+      
+      // Extract headings and paragraphs
+      const elements = contentEl.querySelectorAll("h1, h2, h3, h4, h5, h6, p, li, blockquote");
+      elements.forEach((el) => {
+        const tag = el.tagName.toLowerCase();
+        const text = el.textContent?.trim();
+        if (!text || text.length < 3) return;
+        
+        if (tag === "h1") content += `# ${text}\n\n`;
+        else if (tag === "h2") content += `## ${text}\n\n`;
+        else if (tag === "h3") content += `### ${text}\n\n`;
+        else if (tag === "h4") content += `#### ${text}\n\n`;
+        else if (tag === "h5" || tag === "h6") content += `##### ${text}\n\n`;
+        else if (tag === "li") content += `- ${text}\n`;
+        else if (tag === "blockquote") content += `> ${text}\n\n`;
+        else content += `${text}\n\n`;
+      });
+      
+      // Clean up multiple newlines
+      content = content.replace(/\n{3,}/g, "\n\n").trim();
+      
+      if (content.length < 100) {
+        // Fallback to body text if extraction didn't work well
+        content = `# ${pageTitle}\n\n${contentEl.textContent?.replace(/\s+/g, " ").trim() || "Content could not be extracted."}`;
+      }
+      
+      return content;
+    } catch (error) {
+      console.error("Error fetching URL content:", error);
+      return `# Content from ${url}\n\nUnable to fetch content automatically due to network restrictions.\n\nPlease copy and paste the content manually.`;
+    }
+  }
 
   const updateItemStatus = useCallback(
     (contentId: string, status: ContentItem["status"], score?: number) => {
@@ -214,17 +323,27 @@ export function ContentProvider({ children }: { children: ReactNode }) {
     []
   );
 
+  const addFolder = useCallback(
+    (productId: string, folderName: string): string => {
+      const id = `folder-${Date.now()}`;
+      setProducts((prev) =>
+        prev.map((p) =>
+          p.id === productId
+            ? {
+                ...p,
+                folders: [...p.folders, { id, name: folderName, items: [] }],
+              }
+            : p
+        )
+      );
+      return id;
+    },
+    []
+  );
+
   return (
     <ContentContext.Provider
-      value={{
-        products,
-        getAnalysis,
-        findContent,
-        addContentItem,
-        updateItemStatus,
-        getProductPrompts,
-        addPromptsToProduct,
-      }}
+      value={{ products, getAnalysis, findContent, addContentItem, updateItemStatus, addFolder }}
     >
       {children}
     </ContentContext.Provider>

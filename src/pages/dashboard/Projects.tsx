@@ -78,7 +78,7 @@ export default function ProjectsPage() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Workspaces & Projects</h1>
+          <h1 className="text-2xl font-heading font-bold tracking-tight">Workspaces & Projects</h1>
           <p className="text-muted-foreground text-sm mt-0.5">Organize your products, brands, and content collections</p>
         </div>
         <button

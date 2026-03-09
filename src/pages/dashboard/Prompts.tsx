@@ -1,33 +1,31 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
+import { Link } from "react-router-dom";
 import {
-  Search,
-  Sparkles,
-  TrendingUp,
-  HelpCircle,
-  Swords,
-  BookOpen,
-  Hash,
-  Wrench,
-  Plus,
-  ChevronRight,
-  BarChart2,
-  Loader2,
-  CheckCircle2,
+  Search, Sparkles, TrendingUp, HelpCircle, Swords, BookOpen,
+  Hash, Wrench, Plus, Play, ChevronRight, BarChart2, Loader2, CheckCircle2,
+  ArrowRight, Brain, Zap,
 } from "lucide-react";
+import { motion } from "framer-motion";
 import toast from "react-hot-toast";
-import { INTENT_DEFINITIONS, type LLMIntentType } from "@/data/products";
-import { useContent } from "@/contexts/ContentContext";
+import {
+  getProductPrompts, addPromptsToProduct,
+  type LLMIntentType, type ProductPrompt,
+} from "@/data/products";
 
-// ─── Intent icons/colors (Prompts-page presentation layer only) ───────────────
+interface IntentMeta {
+  id: LLMIntentType; label: string; desc: string; icon: React.ReactNode; color: string; gradient: string; example: string;
+}
 
-const INTENT_ICONS: Record<LLMIntentType, { icon: React.ReactNode; color: string }> = {
-  seek_explanation: { icon: <HelpCircle className="h-4 w-4" />, color: "text-blue-400" },
-  find_best:        { icon: <TrendingUp className="h-4 w-4" />, color: "text-green-400" },
-  compare:          { icon: <Swords    className="h-4 w-4" />, color: "text-orange-400" },
-  learn_howto:      { icon: <BookOpen  className="h-4 w-4" />, color: "text-yellow-400" },
-  find_alternative: { icon: <Hash      className="h-4 w-4" />, color: "text-purple-400" },
-  troubleshoot:     { icon: <Wrench    className="h-4 w-4" />, color: "text-red-400" },
-};
+const INTENT_META: IntentMeta[] = [
+  { id: "seek_explanation", label: "Explain / What is", desc: "User asks the AI to explain or define something", icon: <HelpCircle className="h-4 w-4" />, color: "text-blue-400", gradient: "from-blue-500 to-cyan-500", example: '"What is AI observability?"' },
+  { id: "find_best", label: "Find the best", desc: "User asks for top tools or recommendations", icon: <TrendingUp className="h-4 w-4" />, color: "text-emerald-400", gradient: "from-emerald-500 to-green-500", example: '"Best LLM monitoring tools 2026"' },
+  { id: "compare", label: "Compare options", desc: "User compares two or more products side-by-side", icon: <Swords className="h-4 w-4" />, color: "text-orange-400", gradient: "from-orange-500 to-amber-500", example: '"GAEO vs LangSmith"' },
+  { id: "learn_howto", label: "Learn how-to", desc: "User wants step-by-step guidance", icon: <BookOpen className="h-4 w-4" />, color: "text-amber-400", gradient: "from-amber-500 to-yellow-500", example: '"How to monitor LLM apps in production?"' },
+  { id: "find_alternative", label: "Find alternatives", desc: "User looking for alternatives to a tool", icon: <Hash className="h-4 w-4" />, color: "text-violet-400", gradient: "from-violet-500 to-purple-500", example: '"LangSmith alternatives"' },
+  { id: "troubleshoot", label: "Troubleshoot / Fix", desc: "User diagnosing a problem or seeking a fix", icon: <Wrench className="h-4 w-4" />, color: "text-rose-400", gradient: "from-rose-500 to-red-500", example: '"Why is my LLM giving wrong answers?"' },
+];
+
+const PRODUCT_ID = "product-gaeo";
 
 const DISCOVERED_PROMPTS: Array<{ text: string; intent: LLMIntentType }> = [
   { text: "What tools help monitor LLM outputs in production?",        intent: "find_best" },
@@ -49,254 +47,187 @@ export default function PromptsPage() {
   const [selectedIntent, setSelectedIntent] = useState<LLMIntentType>("seek_explanation");
   const [isDiscovering, setIsDiscovering] = useState(false);
   const [customPrompt, setCustomPrompt] = useState("");
-  const [tab, setTab] = useState<"database" | "simulate">("database");
+  const [, forceUpdate] = useState(0);
+  const allPrompts: ProductPrompt[] = getProductPrompts(PRODUCT_ID);
 
-  // Derived from context state — no forceUpdate needed
-  const allPrompts = getProductPrompts(selectedProductId);
-
-  const activeIntentDef = useMemo(
-    () => INTENT_DEFINITIONS.find((d) => d.id === selectedIntent)!,
-    [selectedIntent]
-  );
-  const intentPrompts = useMemo(
-    () => allPrompts.filter((p) => p.intent === selectedIntent),
-    [allPrompts, selectedIntent]
-  );
-  const coveredCount = useMemo(() => allPrompts.filter((p) => p.covered).length, [allPrompts]);
+  const activeIntentMeta = INTENT_META.find((m) => m.id === selectedIntent)!;
+  const intentPrompts = allPrompts.filter((p) => p.intent === selectedIntent);
+  const totalPrompts = allPrompts.length;
+  const coveredPrompts = allPrompts.filter((p) => p.covered).length;
+  const gapPrompts = allPrompts.filter((p) => !p.covered);
 
   function handleDiscover() {
     setIsDiscovering(true);
     setTimeout(() => {
-      addPromptsToProduct(selectedProductId, DISCOVERED_PROMPTS);
+      addPromptsToProduct(PRODUCT_ID, DISCOVERED_PROMPTS.map(p => ({ ...p, covered: false })));
       setIsDiscovering(false);
-      toast.success(`${DISCOVERED_PROMPTS.length} new prompts discovered from your content!`);
+      forceUpdate((n) => n + 1);
+      toast.success(`${DISCOVERED_PROMPTS.length} new prompts discovered!`);
     }, 2000);
   }
 
   function handleAddCustomPrompt() {
-    const text = customPrompt.trim();
-    if (!text) return;
-    addPromptsToProduct(selectedProductId, [{ text, intent: selectedIntent, covered: false }]);
-    toast.success("Prompt added to database");
-    setCustomPrompt("");
+    if (!customPrompt.trim()) return;
+    addPromptsToProduct(PRODUCT_ID, [{ text: customPrompt.trim(), intent: selectedIntent, covered: false }]);
+    toast.success("Prompt added");
+    setCustomPrompt(""); forceUpdate((n) => n + 1);
   }
 
   const selectedProduct = products.find((p) => p.id === selectedProductId);
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-start justify-between gap-4 flex-wrap">
+    <div className="p-6 lg:p-8 space-y-6">
+      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">AI Discovery Prompt Engine</h1>
-          <p className="text-muted-foreground text-sm mt-0.5">
-            Manage the prompts users ask AI systems — organised by how they interact with the LLM
-          </p>
+          <h1 className="text-2xl font-heading font-bold tracking-tight">Prompt Engine</h1>
+          <p className="text-muted-foreground text-sm mt-0.5">Manage prompts users ask AI systems — by interaction intent</p>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          {/* Product selector */}
-          <div className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2">
-            <span className="text-xs text-muted-foreground font-medium">Product:</span>
-            <select
-              value={selectedProductId}
-              onChange={(e) => setSelectedProductId(e.target.value)}
-              className="bg-transparent text-sm font-medium focus:outline-none cursor-pointer"
-            >
-              {products.map((p) => (
-                <option key={p.id} value={p.id}>{p.name}</option>
-              ))}
-            </select>
-          </div>
-          <button
-            onClick={handleDiscover}
-            disabled={isDiscovering}
-            className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-60"
-          >
-            {isDiscovering ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-            {isDiscovering ? "Discovering..." : "Discover Prompts"}
-          </button>
-        </div>
-      </div>
+        <button onClick={handleDiscover} disabled={isDiscovering} className="btn-primary text-xs px-4 py-2">
+          {isDiscovering ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+          {isDiscovering ? "Discovering..." : "Discover Prompts"}
+        </button>
+      </motion.div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
-        <div className="rounded-xl border border-border bg-card p-4 text-center">
-          <p className="text-2xl font-bold">{allPrompts.length}</p>
-          <p className="text-xs text-muted-foreground mt-0.5">Total Prompts</p>
-        </div>
-        <div className="rounded-xl border border-border bg-card p-4 text-center">
-          <p className="text-2xl font-bold text-green-400">{coveredCount}</p>
-          <p className="text-xs text-muted-foreground mt-0.5">Content Covered</p>
-        </div>
-        <div className="rounded-xl border border-border bg-card p-4 text-center">
-          <p className="text-2xl font-bold text-red-400">{allPrompts.length - coveredCount}</p>
-          <p className="text-xs text-muted-foreground mt-0.5">Coverage Gaps</p>
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <div className="flex gap-1 rounded-lg border border-border bg-muted/30 p-1 w-fit">
-        {(["database", "simulate"] as const).map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${tab === t ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+      <div className="grid grid-cols-3 gap-3">
+        {[
+          { value: totalPrompts, label: "Total Prompts", gradient: "from-violet-500/10 to-purple-500/5" },
+          { value: coveredPrompts, label: "Covered", gradient: "from-emerald-500/10 to-green-500/5" },
+          { value: totalPrompts - coveredPrompts, label: "Gaps", gradient: "from-rose-500/10 to-red-500/5" },
+        ].map((stat, i) => (
+          <motion.div key={stat.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
+            className={`bento-card text-center bg-gradient-to-br ${stat.gradient}`}
           >
-            {t === "database" ? "Prompt Database" : "Quick Simulate"}
-          </button>
+            <p className="text-3xl font-heading font-black tabular-nums">{stat.value}</p>
+            <p className="text-[10px] text-muted-foreground mt-1 font-medium uppercase tracking-wider">{stat.label}</p>
+          </motion.div>
         ))}
       </div>
 
-      {tab === "database" && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Intent list */}
-          <div className="space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground px-1 mb-3">
-              User Interaction Intents
-            </p>
-            {INTENT_DEFINITIONS.map((def) => {
-              const { icon, color } = INTENT_ICONS[def.id];
-              const count   = allPrompts.filter((p) => p.intent === def.id).length;
-              const covered = allPrompts.filter((p) => p.intent === def.id && p.covered).length;
-              return (
-                <button
-                  key={def.id}
-                  onClick={() => setSelectedIntent(def.id)}
-                  className={`w-full flex items-center gap-3 rounded-xl border p-4 text-left transition-colors ${
-                    selectedIntent === def.id
-                      ? "border-primary/50 bg-primary/10"
-                      : "border-border hover:border-primary/30 bg-card"
-                  }`}
-                >
-                  <div className={color}>{icon}</div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm">{def.label}</p>
-                    <p className="text-xs text-muted-foreground">{count} prompts · {covered} covered</p>
-                  </div>
-                  {count > 0 && (
-                    <div className="h-1.5 w-12 rounded-full bg-muted overflow-hidden">
-                      <div
-                        className="h-full bg-green-400 rounded-full"
-                        style={{ width: `${(covered / count) * 100}%` }}
-                      />
-                    </div>
-                  )}
-                  <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                </button>
-              );
-            })}
-          </div>
+      {/* Connected actions */}
+      <div className="rounded-xl border border-border bg-card/50 p-4 flex flex-wrap items-center gap-3">
+        <span className="text-xs font-medium text-muted-foreground">Use prompts in:</span>
+        <Link to="/dashboard/simulation" className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium hover:bg-accent/40 hover:border-primary/30 transition-colors">
+          <Brain className="h-3 w-3 text-primary" /> Simulation Engine
+          <ArrowRight className="h-2.5 w-2.5 text-muted-foreground" />
+        </Link>
+        <Link to="/dashboard/competitive" className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium hover:bg-accent/40 hover:border-primary/30 transition-colors">
+          <Swords className="h-3 w-3 text-primary" /> Competitive Analysis
+          <ArrowRight className="h-2.5 w-2.5 text-muted-foreground" />
+        </Link>
+        <Link to="/dashboard/content/generate" className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium hover:bg-accent/40 hover:border-primary/30 transition-colors">
+          <Zap className="h-3 w-3 text-primary" /> Generate Content
+          <ArrowRight className="h-2.5 w-2.5 text-muted-foreground" />
+        </Link>
+        {gapPrompts.length > 0 && (
+          <Link to="/dashboard/analysis" className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium hover:bg-accent/40 hover:border-primary/30 transition-colors">
+            <BarChart2 className="h-3 w-3 text-primary" /> Gap Analysis
+            <span className="text-[10px] text-red-400 ml-1">{gapPrompts.length} gaps</span>
+          </Link>
+        )}
+      </div>
 
-          {/* Prompt list */}
-          <div className="lg:col-span-2 rounded-xl border border-border bg-card overflow-hidden">
-            <div className="flex items-center gap-3 px-5 py-4 border-b border-border">
-              <div className={INTENT_ICONS[activeIntentDef.id].color}>
-                {INTENT_ICONS[activeIntentDef.id].icon}
-              </div>
-              <div>
-                <h2 className="font-semibold">{activeIntentDef.label}</h2>
-                <p className="text-xs text-muted-foreground">{activeIntentDef.desc}</p>
-              </div>
-              <span className="ml-auto text-xs text-muted-foreground">{intentPrompts.length} prompts</span>
-            </div>
-
-            <div className="px-5 py-3 border-b border-border bg-muted/20">
-              <p className="text-xs text-muted-foreground">
-                Example: <span className="italic text-foreground/70">{activeIntentDef.example}</span>
-              </p>
-            </div>
-
-            {intentPrompts.length === 0 ? (
-              <div className="p-10 text-center text-muted-foreground">
-                <p className="text-sm">No prompts for this intent yet.</p>
-                <p className="text-xs mt-1">
-                  Use the "Generate Prompts" feature in any content item, or add one manually below.
-                </p>
-              </div>
-            ) : (
-              <div className="divide-y divide-border">
-                {intentPrompts.map((prompt) => (
-                  <div key={prompt.id} className="flex items-center gap-3 px-5 py-3">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium">{prompt.text}</p>
-                    </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      {prompt.covered ? (
-                        <span className="text-xs bg-green-500/15 text-green-400 px-2 py-0.5 rounded-full flex items-center gap-1">
-                          <CheckCircle2 className="h-3 w-3" /> Covered
-                        </span>
-                      ) : (
-                        <span className="text-xs bg-red-500/15 text-red-400 px-2 py-0.5 rounded-full">Gap</span>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <div className="px-5 py-4 border-t border-border flex items-center gap-2">
-              <input
-                value={customPrompt}
-                onChange={(e) => setCustomPrompt(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleAddCustomPrompt()}
-                placeholder={`Add custom "${activeIntentDef.label}" prompt…`}
-                className="flex-1 rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
-              />
-              <button
-                onClick={handleAddCustomPrompt}
-                disabled={!customPrompt.trim()}
-                className="rounded-lg border border-border px-3 py-2 hover:bg-accent disabled:opacity-60 transition-colors"
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Intent list */}
+        <div className="space-y-1.5">
+          <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-muted-foreground/60 px-1 mb-3">Interaction Intents</p>
+          {INTENT_META.map((meta) => {
+            const count = allPrompts.filter((p) => p.intent === meta.id).length;
+            const covered = allPrompts.filter((p) => p.intent === meta.id && p.covered).length;
+            return (
+              <button key={meta.id} onClick={() => setSelectedIntent(meta.id)}
+                className={`w-full flex items-center gap-3 rounded-xl border p-3.5 text-left transition-all ${
+                  selectedIntent === meta.id ? "border-primary/25 bg-primary/5" : "border-border/30 hover:border-primary/15 bg-card/50"
+                }`}
               >
-                <Plus className="h-4 w-4" />
+                <div className={`h-8 w-8 rounded-lg bg-gradient-to-br ${meta.gradient} flex items-center justify-center text-white flex-shrink-0`}>
+                  {meta.icon}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-xs">{meta.label}</p>
+                  <p className="text-[10px] text-muted-foreground tabular-nums font-mono">{count} · {covered} covered</p>
+                </div>
+                {count > 0 && (
+                  <div className="h-1 w-10 rounded-full bg-border/50 overflow-hidden">
+                    <div className="h-full bg-emerald-400 rounded-full" style={{ width: `${count > 0 ? (covered / count) * 100 : 0}%` }} />
+                  </div>
+                )}
               </button>
-            </div>
-          </div>
+            );
+          })}
         </div>
-      )}
 
-      {tab === "simulate" && (
-        <div className="rounded-xl border border-border bg-card p-6 space-y-4">
-          <h2 className="font-semibold">Quick Prompt Simulation</h2>
-          <p className="text-sm text-muted-foreground">
-            Test a specific prompt across all major LLMs to see how your product ranks. Results appear in the{" "}
-            <strong>{selectedProduct?.name ?? "selected product"}</strong> analysis.
-          </p>
-          <div className="flex gap-2">
-            <div className="relative flex-1">
-              <Search className="h-4 w-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                value={customPrompt}
-                onChange={(e) => setCustomPrompt(e.target.value)}
-                placeholder="What are the best AI observability tools?"
-                className="w-full rounded-lg border border-input bg-background pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
-              />
+        {/* Prompt list */}
+        <div className="lg:col-span-2 section-card">
+          <div className="flex items-center gap-3 px-6 py-4 border-b border-border/30">
+            <div className={`h-8 w-8 rounded-lg bg-gradient-to-br ${activeIntentMeta.gradient} flex items-center justify-center text-white flex-shrink-0`}>
+              {activeIntentMeta.icon}
             </div>
-            <button
-              onClick={() => {
-                if (!customPrompt.trim()) return;
-                addPromptsToProduct(selectedProductId, [{ text: customPrompt.trim(), intent: "seek_explanation", covered: false }]);
-                toast.success("Prompt added to database and queued for simulation");
-                setCustomPrompt("");
-              }}
-              disabled={!customPrompt.trim()}
-              className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60 flex items-center gap-2"
+            <div>
+              <h2 className="font-heading font-bold text-sm">{activeIntentMeta.label}</h2>
+              <p className="text-[10px] text-muted-foreground">{activeIntentMeta.desc}</p>
+            </div>
+            <span className="ml-auto text-[10px] text-muted-foreground tabular-nums font-mono">{intentPrompts.length} prompts</span>
+          </div>
+          <div className="px-6 py-2.5 border-b border-border/30 bg-muted/10">
+            <p className="text-[10px] text-muted-foreground">Example: <span className="italic text-foreground/60 font-mono">{activeIntentMeta.example}</span></p>
+          </div>
+
+          {intentPrompts.length === 0 ? (
+            <div className="p-12 text-center text-muted-foreground">
+              <p className="text-sm font-medium">No prompts yet.</p>
+              <p className="text-[10px] mt-1 text-muted-foreground/60">Use "Discover Prompts" or add one below.</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-border/30">
+              {intentPrompts.map((prompt) => (
+                <div key={prompt.id} className="flex items-center gap-3 px-6 py-3 hover:bg-accent/15 transition-colors">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium">{prompt.text}</p>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {prompt.covered ? (
+                      <span className="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/15 px-2 py-0.5 rounded-full flex items-center gap-1 font-medium">
+                        <CheckCircle2 className="h-2.5 w-2.5" /> Covered
+                      </span>
+                    ) : (
+                      <span className="text-[10px] bg-red-500/10 text-red-400 border border-red-500/15 px-2 py-0.5 rounded-full font-medium">Gap</span>
+                    )}
+                    <Link
+                      to={`/dashboard/simulation?prompt=${encodeURIComponent(prompt.text)}`}
+                      className="rounded-lg border border-border/30 p-1.5 text-muted-foreground/50 hover:text-foreground hover:bg-accent/30 transition-all"
+                      title="Simulate this prompt"
+                    >
+                      <Play className="h-2.5 w-2.5" />
+                    </Link>
+                    {!prompt.covered && (
+                      <Link
+                        to={`/dashboard/content/generate?topic=${encodeURIComponent(prompt.text)}`}
+                        className="rounded-lg border border-border/30 p-1.5 text-muted-foreground/50 hover:text-primary hover:bg-primary/10 transition-all"
+                        title="Generate content for this prompt"
+                      >
+                        <Zap className="h-2.5 w-2.5" />
+                      </Link>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="px-6 py-3.5 border-t border-border/30 flex items-center gap-2">
+            <input value={customPrompt} onChange={(e) => setCustomPrompt(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleAddCustomPrompt()}
+              placeholder={`Add "${activeIntentMeta.label}" prompt…`}
+              className="input-field flex-1"
+            />
+            <button onClick={handleAddCustomPrompt} disabled={!customPrompt.trim()}
+              className="rounded-xl border border-border/30 px-3 py-2.5 hover:bg-accent/30 disabled:opacity-40 transition-all"
             >
-              <BarChart2 className="h-4 w-4" /> Simulate
+              <Plus className="h-3.5 w-3.5" />
             </button>
           </div>
-          <div className="space-y-2">
-            <p className="text-xs text-muted-foreground font-medium">Prompts from your database:</p>
-            {allPrompts.slice(0, 6).map((p) => (
-              <button
-                key={p.id}
-                onClick={() => setCustomPrompt(p.text)}
-                className="w-full text-left text-sm text-muted-foreground hover:text-foreground flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-accent transition-colors"
-              >
-                <Search className="h-3 w-3 flex-shrink-0" /> {p.text}
-              </button>
-            ))}
-          </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }

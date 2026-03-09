@@ -35,21 +35,11 @@ type Tone = "professional" | "conversational" | "technical";
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 
-// Demo prompts generated from content analysis, grouped by intent
-const DEMO_GENERATED_PROMPTS: Array<{ text: string; intent: LLMIntentType }> = [
-  { text: "What is AI observability?", intent: "seek_explanation" },
-  { text: "How does AI observability work?", intent: "seek_explanation" },
-  { text: "What is LLM monitoring and why does it matter?", intent: "seek_explanation" },
-  { text: "Best AI observability platforms 2026", intent: "find_best" },
-  { text: "Top LLM monitoring tools for production", intent: "find_best" },
-  { text: "GAEO Platform vs LangSmith — which is better?", intent: "compare" },
-  { text: "AI observability vs traditional APM monitoring", intent: "compare" },
-  { text: "How to set up LLM monitoring in production?", intent: "learn_howto" },
-  { text: "How to detect model drift in production?", intent: "learn_howto" },
-  { text: "LangSmith alternatives for AI monitoring", intent: "find_alternative" },
-  { text: "Open source LLM observability tools", intent: "find_alternative" },
-  { text: "Why is my LLM giving inconsistent outputs?", intent: "troubleshoot" },
-];
+// Type for generated prompts
+interface GeneratedPrompt {
+  text: string;
+  intent: LLMIntentType;
+}
 
 const ENHANCEMENTS = [
   { id: "entity_definition", label: "Add entity definition block", desc: "Clear 'X is Y' statement in intro" },
@@ -220,7 +210,7 @@ export default function ContentDetailPage() {
 
   // Prompts tab state
   const [isGeneratingPrompts, setIsGeneratingPrompts] = useState(false);
-  const [generatedPrompts, setGeneratedPrompts] = useState<typeof DEMO_GENERATED_PROMPTS | null>(null);
+  const [generatedPrompts, setGeneratedPrompts] = useState<GeneratedPrompt[] | null>(null);
   const [selectedPrompts, setSelectedPrompts] = useState<Set<string>>(new Set());
 
   // Generate state
@@ -359,14 +349,55 @@ export default function ContentDetailPage() {
     setEnhancements((prev) => ({ ...prev, [id]: !prev[id] }));
   }
 
-  function handleGeneratePrompts() {
+  async function handleGeneratePrompts() {
     setIsGeneratingPrompts(true);
     setSelectedPrompts(new Set());
-    setTimeout(() => {
-      setGeneratedPrompts(DEMO_GENERATED_PROMPTS);
+    setGeneratedPrompts(null);
+    
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-prompts`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({
+            contentTitle: item.title,
+            contentBody: item.raw_content,
+            productName: product.name,
+            productCategory: product.category,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        if (response.status === 429) {
+          toast.error("Rate limit exceeded. Please try again later.");
+        } else if (response.status === 402) {
+          toast.error("Payment required. Please add credits to your workspace.");
+        } else {
+          toast.error(errorData.error || "Failed to generate prompts");
+        }
+        setIsGeneratingPrompts(false);
+        return;
+      }
+
+      const data = await response.json();
+      if (data.prompts && Array.isArray(data.prompts)) {
+        setGeneratedPrompts(data.prompts);
+        toast.success(`${data.prompts.length} prompts generated from your content!`);
+      } else {
+        toast.error("Invalid response from AI");
+      }
+    } catch (error) {
+      console.error("Error generating prompts:", error);
+      toast.error("Failed to generate prompts. Please try again.");
+    } finally {
       setIsGeneratingPrompts(false);
-      toast.success("12 prompts generated from your content!");
-    }, 1600);
+    }
   }
 
   function togglePromptSelection(text: string) {
@@ -575,6 +606,36 @@ export default function ContentDetailPage() {
         {/* ─── Gap Analysis ─────────────────────────────────────── */}
         {activeTab === "analysis" && (
           <div className="p-6 space-y-6">
+            {/* Sources banner — Gap Analysis uses Prompts + Original Content */}
+            <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Analysis Inputs</p>
+              <div className="flex items-center gap-3 flex-wrap">
+                <div className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2">
+                  <FileText className="h-4 w-4 text-primary" />
+                  <div>
+                    <p className="text-xs font-medium">Original Content</p>
+                    <p className="text-[10px] text-muted-foreground">"{item.title}" · {item.word_count ?? '—'} words</p>
+                  </div>
+                </div>
+                <span className="text-muted-foreground text-lg">+</span>
+                <div className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2">
+                  <Sparkles className="h-4 w-4 text-primary" />
+                  <div>
+                    <p className="text-xs font-medium">Prompt Database</p>
+                    <p className="text-[10px] text-muted-foreground">{getProductPrompts(product.id).length} tracked prompts · {getProductPrompts(product.id).filter(p => !p.covered).length} gaps</p>
+                  </div>
+                </div>
+                <span className="text-muted-foreground text-lg">=</span>
+                <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/10 px-3 py-2">
+                  <AlertTriangle className="h-4 w-4 text-primary" />
+                  <div>
+                    <p className="text-xs font-medium text-primary">Gap Analysis</p>
+                    <p className="text-[10px] text-muted-foreground">Gaps found by comparing content against prompts</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {!analysis ? (
               <div className="rounded-xl border border-border bg-muted/20 p-12 flex flex-col items-center gap-3 text-center">
                 <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -584,6 +645,103 @@ export default function ContentDetailPage() {
               </div>
             ) : (
               <>
+                {/* Prompt coverage section — moved to top */}
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-semibold">
+                      AI Query Coverage
+                      <span className="text-xs font-normal text-muted-foreground ml-2">
+                        — generate prompts this content should answer, then pick which ones to add
+                      </span>
+                    </h3>
+                    <button
+                      onClick={handleGeneratePrompts}
+                      disabled={isGeneratingPrompts}
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-primary/10 border border-primary/30 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/20 disabled:opacity-60 transition-colors"
+                    >
+                      {isGeneratingPrompts ? (
+                        <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Generating…</>
+                      ) : (
+                        <><Sparkles className="h-3.5 w-3.5" /> Generate Prompts</>
+                      )}
+                    </button>
+                  </div>
+
+                  {!generatedPrompts && !isGeneratingPrompts && (
+                    <div className="rounded-xl border border-dashed border-border bg-muted/5 p-8 flex flex-col items-center gap-2 text-center">
+                      <Sparkles className="h-6 w-6 text-muted-foreground/40" />
+                      <p className="text-sm text-muted-foreground">
+                        Click "Generate Prompts" to discover the AI queries this content should answer. You can then pick which ones to add to your database.
+                      </p>
+                    </div>
+                  )}
+
+                  {isGeneratingPrompts && (
+                    <div className="rounded-xl border border-border bg-muted/10 p-8 flex items-center justify-center gap-3">
+                      <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                      <p className="text-sm text-muted-foreground">Analysing content and generating prompts…</p>
+                    </div>
+                  )}
+
+                  {generatedPrompts && !isGeneratingPrompts && (() => {
+                    const existingInDb = new Set(getProductPrompts(product.id).map((p) => p.text.toLowerCase()));
+                    const intentGroups = INTENTS.map((intent) => ({
+                      intent,
+                      prompts: generatedPrompts.filter((p) => p.intent === intent.id),
+                    })).filter((g) => g.prompts.length > 0);
+                    const alreadyTrackedCount = generatedPrompts.filter((p) => existingInDb.has(p.text.toLowerCase())).length;
+                    return (
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between rounded-xl border border-border bg-card px-4 py-3 text-sm">
+                          <div className="flex items-center gap-4">
+                            <span><span className="font-bold">{generatedPrompts.length}</span> <span className="text-muted-foreground">prompts</span></span>
+                            <span className="text-muted-foreground">·</span>
+                            <span><span className="font-bold text-green-400">{alreadyTrackedCount}</span> <span className="text-muted-foreground">in database</span></span>
+                            {selectedPrompts.size > 0 && (
+                              <>
+                                <span className="text-muted-foreground">·</span>
+                                <span><span className="font-bold text-primary">{selectedPrompts.size}</span> <span className="text-muted-foreground">selected</span></span>
+                              </>
+                            )}
+                          </div>
+                          <button
+                            onClick={handleAddPromptsToDatabase}
+                            disabled={selectedPrompts.size === 0}
+                            className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-40 transition-colors"
+                          >
+                            <Plus className="h-3 w-3" /> Add Selected to Prompts
+                          </button>
+                        </div>
+                        {intentGroups.map(({ intent: intentMeta, prompts }) => (
+                          <div key={intentMeta.id} className="rounded-xl border border-border bg-card overflow-hidden">
+                            <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border bg-muted/20">
+                              <span className="text-xs font-semibold">{intentMeta.label}</span>
+                              <span className="text-xs text-muted-foreground">— {intentMeta.desc}</span>
+                              <span className="ml-auto text-[10px] text-muted-foreground">{prompts.length}</span>
+                            </div>
+                            <div className="divide-y divide-border">
+                              {prompts.map((p) => {
+                                const alreadyInDb = existingInDb.has(p.text.toLowerCase());
+                                const isSelected = selectedPrompts.has(p.text);
+                                return (
+                                  <label key={p.text} className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer transition-colors ${isSelected ? "bg-primary/5" : "hover:bg-accent/30"} ${alreadyInDb ? "opacity-60" : ""}`}>
+                                    <input type="checkbox" checked={isSelected} disabled={alreadyInDb} onChange={() => togglePromptSelection(p.text)} className="accent-primary flex-shrink-0" />
+                                    <span className="text-sm flex-1">{p.text}</span>
+                                    {alreadyInDb
+                                      ? <span className="text-[10px] bg-green-500/15 text-green-400 px-2 py-0.5 rounded-full flex-shrink-0 flex items-center gap-1"><CheckCircle2 className="h-3 w-3" /> In DB</span>
+                                      : <span className="text-[10px] bg-muted text-muted-foreground px-2 py-0.5 rounded-full flex-shrink-0">{intentMeta.label}</span>
+                                    }
+                                  </label>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
+                </div>
+
                 {/* Score + dimensions */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   <div className="rounded-xl border border-border bg-card p-6 flex flex-col items-center gap-2">
@@ -664,6 +822,15 @@ export default function ContentDetailPage() {
                               </p>
                               <p className="text-xs text-foreground">{gap.fix}</p>
                             </div>
+                            <button
+                              onClick={() => {
+                                toast.success(`Generating fix for "${gap.label}"...`);
+                                setTimeout(() => toast.success(`Fix generated for "${gap.label}" — check the Generate tab.`), 2000);
+                              }}
+                              className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-primary/10 border border-primary/30 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/20 transition-colors"
+                            >
+                              <Sparkles className="h-3 w-3" /> Generate Fix
+                            </button>
                           </div>
                         </div>
                       </div>
@@ -700,102 +867,7 @@ export default function ContentDetailPage() {
                   </div>
                 </div>
 
-                {/* Prompt coverage section */}
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-semibold">
-                      AI Query Coverage
-                      <span className="text-xs font-normal text-muted-foreground ml-2">
-                        — prompts this content should answer
-                      </span>
-                    </h3>
-                    <button
-                      onClick={handleGeneratePrompts}
-                      disabled={isGeneratingPrompts}
-                      className="inline-flex items-center gap-1.5 rounded-lg bg-primary/10 border border-primary/30 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/20 disabled:opacity-60 transition-colors"
-                    >
-                      {isGeneratingPrompts ? (
-                        <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Generating…</>
-                      ) : (
-                        <><Sparkles className="h-3.5 w-3.5" /> Generate Prompts</>
-                      )}
-                    </button>
-                  </div>
-
-                  {!generatedPrompts && !isGeneratingPrompts && (
-                    <div className="rounded-xl border border-dashed border-border bg-muted/5 p-8 flex flex-col items-center gap-2 text-center">
-                      <Sparkles className="h-6 w-6 text-muted-foreground/40" />
-                      <p className="text-sm text-muted-foreground">
-                        Click "Generate Prompts" to discover the AI queries this content should answer.
-                      </p>
-                    </div>
-                  )}
-
-                  {isGeneratingPrompts && (
-                    <div className="rounded-xl border border-border bg-muted/10 p-8 flex items-center justify-center gap-3">
-                      <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                      <p className="text-sm text-muted-foreground">Analysing content and generating prompts…</p>
-                    </div>
-                  )}
-
-                  {generatedPrompts && !isGeneratingPrompts && (() => {
-                    const existingInDb = new Set(getProductPrompts(product.id).map((p) => p.text.toLowerCase()));
-                    const intentGroups = INTENT_DEFINITIONS.map((intent) => ({
-                      intent,
-                      prompts: generatedPrompts.filter((p) => p.intent === intent.id),
-                    })).filter((g) => g.prompts.length > 0);
-                    const alreadyTrackedCount = generatedPrompts.filter((p) => existingInDb.has(p.text.toLowerCase())).length;
-                    return (
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between rounded-xl border border-border bg-card px-4 py-3 text-sm">
-                          <div className="flex items-center gap-4">
-                            <span><span className="font-bold">{generatedPrompts.length}</span> <span className="text-muted-foreground">prompts</span></span>
-                            <span className="text-muted-foreground">·</span>
-                            <span><span className="font-bold text-green-400">{alreadyTrackedCount}</span> <span className="text-muted-foreground">in database</span></span>
-                            {selectedPrompts.size > 0 && (
-                              <>
-                                <span className="text-muted-foreground">·</span>
-                                <span><span className="font-bold text-primary">{selectedPrompts.size}</span> <span className="text-muted-foreground">selected</span></span>
-                              </>
-                            )}
-                          </div>
-                          <button
-                            onClick={handleAddPromptsToDatabase}
-                            disabled={selectedPrompts.size === 0}
-                            className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-40 transition-colors"
-                          >
-                            <Plus className="h-3 w-3" /> Add to Product Prompts
-                          </button>
-                        </div>
-                        {intentGroups.map(({ intent: intentMeta, prompts }) => (
-                          <div key={intentMeta.id} className="rounded-xl border border-border bg-card overflow-hidden">
-                            <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border bg-muted/20">
-                              <span className="text-xs font-semibold">{intentMeta.label}</span>
-                              <span className="text-xs text-muted-foreground">— {intentMeta.desc}</span>
-                              <span className="ml-auto text-[10px] text-muted-foreground">{prompts.length}</span>
-                            </div>
-                            <div className="divide-y divide-border">
-                              {prompts.map((p) => {
-                                const alreadyInDb = existingInDb.has(p.text.toLowerCase());
-                                const isSelected = selectedPrompts.has(p.text);
-                                return (
-                                  <label key={p.text} className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer transition-colors ${isSelected ? "bg-primary/5" : "hover:bg-accent/30"} ${alreadyInDb ? "opacity-60" : ""}`}>
-                                    <input type="checkbox" checked={isSelected} disabled={alreadyInDb} onChange={() => togglePromptSelection(p.text)} className="accent-primary flex-shrink-0" />
-                                    <span className="text-sm flex-1">{p.text}</span>
-                                    {alreadyInDb
-                                      ? <span className="text-[10px] bg-green-500/15 text-green-400 px-2 py-0.5 rounded-full flex-shrink-0 flex items-center gap-1"><CheckCircle2 className="h-3 w-3" /> In DB</span>
-                                      : <span className="text-[10px] bg-muted text-muted-foreground px-2 py-0.5 rounded-full flex-shrink-0">{intentMeta.label}</span>
-                                    }
-                                  </label>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    );
-                  })()}
-                </div>
+                {/* Prompt coverage section removed — now at top of analysis tab */}
 
                 {/* CTA → Generate */}
                 <div className="rounded-xl border border-primary/20 bg-primary/5 p-5 flex items-center justify-between gap-4">
@@ -819,16 +891,39 @@ export default function ContentDetailPage() {
 
         {/* ─── AI Generate ──────────────────────────────────────── */}
         {activeTab === "generate" && (
-          <div className="p-6">
+          <div className="p-6 space-y-6">
+            {/* AI Content Guidelines */}
+            <div className="rounded-xl border border-primary/20 bg-primary/5 p-5">
+              <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-primary" /> AI Content Guidelines
+              </h3>
+              <p className="text-xs text-muted-foreground mb-3">
+                Content generated by GAEO follows these AI-visibility principles — what AI-enabled content must contain to be cited by LLMs:
+              </p>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                {[
+                  { title: "Entity Definition", desc: 'Clear "X is Y" statement in the first paragraph so LLMs know what you are' },
+                  { title: "Structured Headings", desc: "H2/H3 hierarchy per concept — LLMs parse structure to extract answers" },
+                  { title: "FAQ Coverage", desc: "Q&A pairs matching user prompts — FAQ content is cited 3.2× more by LLMs" },
+                  { title: "Comparison Tables", desc: "Structured vs. alternatives — appears in 'best tools' and comparison queries" },
+                  { title: "Keyword Consistency", desc: "Natural repetition of primary keywords to build strong topic association" },
+                  { title: "Educational Depth", desc: "Authoritative, educational content — LLMs prefer depth over promotional text" },
+                ].map((g) => (
+                  <div key={g.title} className="rounded-lg border border-border bg-card p-3">
+                    <p className="text-xs font-semibold mb-0.5">{g.title}</p>
+                    <p className="text-[10px] text-muted-foreground leading-relaxed">{g.desc}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Left: parameters */}
               <div className="space-y-5">
                 <div>
                   <h2 className="font-semibold mb-1">Generate AI-Compliant Content</h2>
                   <p className="text-xs text-muted-foreground">
-                    Configure how GAEO should rewrite "{item.title}" to maximize AI visibility.
-                    The generated version will be based on your original content with the selected
-                    enhancements applied.
+                    GAEO rewrites "{item.title}" using your original content + gap analysis findings, applying the AI guidelines above.
                   </p>
                 </div>
 

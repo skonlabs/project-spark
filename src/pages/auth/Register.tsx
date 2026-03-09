@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Brain, Eye, EyeOff, Loader2 } from "lucide-react";
+import { ArrowRight, Eye, EyeOff, Loader2 } from "lucide-react";
+import { motion } from "framer-motion";
 import toast from "react-hot-toast";
 
 export default function RegisterPage() {
@@ -11,10 +12,7 @@ export default function RegisterPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (form.password.length < 8) {
-      toast.error("Password must be at least 8 characters");
-      return;
-    }
+    if (form.password.length < 8) { toast.error("Password must be at least 8 characters"); return; }
     setLoading(true);
     try {
       const demoUser = { full_name: form.full_name, email: form.email };
@@ -22,59 +20,78 @@ export default function RegisterPage() {
       localStorage.setItem("user", JSON.stringify(demoUser));
       toast.success("Account created! Welcome to GAEO.");
       navigate("/dashboard");
-    } catch {
-      toast.error("Registration failed");
-    } finally {
-      setLoading(false);
-    }
+    } catch { toast.error("Registration failed"); }
+    finally { setLoading(false); }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
-      <div className="w-full max-w-sm">
-        <div className="flex items-center justify-center gap-2 mb-8">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary">
-            <Brain className="h-6 w-6 text-primary-foreground" />
+    <div className="min-h-screen flex bg-background">
+      {/* Left branding */}
+      <div className="hidden lg:flex lg:w-[45%] relative items-center justify-center border-r border-border bg-card/30">
+        <motion.div initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5 }} className="max-w-[340px] px-12">
+          <div className="flex items-center gap-2 mb-10">
+            <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
+              <span className="text-primary-foreground font-bold text-sm">G</span>
+            </div>
+            <span className="font-heading font-bold text-xl tracking-tight">GAEO</span>
           </div>
-          <span className="font-bold text-2xl">GAEO</span>
-        </div>
+          <h2 className="text-[1.75rem] font-heading font-bold tracking-tight mb-3 leading-tight">
+            Your brand in every<br /><span className="text-primary">AI answer.</span>
+          </h2>
+          <p className="text-muted-foreground text-sm leading-relaxed">Join hundreds of companies already optimizing their AI visibility.</p>
+          <div className="mt-10 grid grid-cols-3 gap-6">
+            {[{ v: "42→78", l: "Score uplift" }, { v: "3.2×", l: "More citations" }, { v: "14 days", l: "First results" }].map((s) => (
+              <div key={s.l} className="text-center">
+                <div className="text-lg font-heading font-bold text-primary">{s.v}</div>
+                <div className="text-[10px] text-muted-foreground/40 mt-0.5">{s.l}</div>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      </div>
 
-        <div className="rounded-xl border border-border bg-card p-8">
-          <h1 className="text-2xl font-bold text-center mb-2">Create your account</h1>
-          <p className="text-muted-foreground text-center text-sm mb-6">Start optimizing for AI discovery</p>
+      {/* Right form */}
+      <div className="flex-1 flex items-center justify-center px-6">
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="w-full max-w-[360px]">
+          <div className="lg:hidden flex items-center justify-center gap-2 mb-10">
+            <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
+              <span className="text-primary-foreground font-bold text-sm">G</span>
+            </div>
+            <span className="font-heading font-bold text-xl tracking-tight">GAEO</span>
+          </div>
+
+          <h1 className="text-xl font-heading font-bold mb-1">Create your account</h1>
+          <p className="text-muted-foreground text-sm mb-8">Start optimizing for AI discovery</p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="text-sm font-medium mb-1.5 block">Full name</label>
-              <input type="text" required value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" placeholder="Jane Smith" />
+              <input type="text" required value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} className="input-field" placeholder="Jane Smith" />
             </div>
             <div>
               <label className="text-sm font-medium mb-1.5 block">Email</label>
-              <input type="email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" placeholder="you@company.com" />
+              <input type="email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="input-field" placeholder="you@company.com" />
             </div>
             <div>
               <label className="text-sm font-medium mb-1.5 block">Password</label>
               <div className="relative">
-                <input type={showPassword ? "text" : "password"} required value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="w-full rounded-lg border border-input bg-background px-3 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-ring" placeholder="Min. 8 characters" />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                <input type={showPassword ? "text" : "password"} required value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="input-field pr-10" placeholder="Min. 8 characters" />
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
             </div>
-            <button type="submit" disabled={loading} className="w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-60 transition-colors flex items-center justify-center gap-2">
+            <button type="submit" disabled={loading} className="btn-primary w-full justify-center py-2.5 text-sm">
               {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-              Create account
+              Create account <ArrowRight className="h-4 w-4" />
             </button>
           </form>
 
-          <p className="mt-4 text-center text-xs text-muted-foreground">
-            By creating an account, you agree to our Terms of Service and Privacy Policy.
+          <p className="mt-4 text-center text-xs text-muted-foreground">By creating an account, you agree to our Terms and Privacy Policy.</p>
+          <p className="mt-4 text-center text-sm text-muted-foreground">
+            Already have an account? <Link to="/auth/login" className="text-primary hover:underline font-medium">Sign in</Link>
           </p>
-          <div className="mt-4 text-center text-sm text-muted-foreground">
-            Already have an account?{" "}
-            <Link to="/auth/login" className="text-primary hover:underline">Sign in</Link>
-          </div>
-        </div>
+        </motion.div>
       </div>
     </div>
   );
