@@ -210,11 +210,19 @@ export default function ContentPage() {
     setShowIngest(false);
   }
 
-  function handleUrlIngest() {
+  async function handleUrlIngest() {
     if (!urlInput) return;
-    ingest(titleFromUrl(urlInput), urlInput, "url");
-    toast.success(`"${titleFromUrl(urlInput)}" ingesting — watch status below`);
-    setUrlInput("");
+    setIsIngesting(true);
+    toast.success(`Scraping "${titleFromUrl(urlInput)}" — this may take a moment...`);
+    try {
+      await ingest(titleFromUrl(urlInput), urlInput, "url");
+      toast.success(`Content ingested successfully!`);
+      setUrlInput("");
+    } catch {
+      toast.error("Failed to ingest URL");
+    } finally {
+      setIsIngesting(false);
+    }
   }
 
   function handleCrawl() {
