@@ -685,7 +685,7 @@ export default function ContentDetailPage() {
 
                   {generatedPrompts && !isGeneratingPrompts && (() => {
                     const existingInDb = new Set(getProductPrompts(product.id).map((p) => p.text.toLowerCase()));
-                    const intentGroups = INTENTS.map((intent) => ({
+                    const intentGroups = INTENT_DEFINITIONS.map((intent) => ({
                       intent,
                       prompts: generatedPrompts.filter((p) => p.intent === intent.id),
                     })).filter((g) => g.prompts.length > 0);

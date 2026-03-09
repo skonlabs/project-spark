@@ -65,7 +65,9 @@ interface ContentContextValue {
     word_count?: number;
   }) => string;
   updateItemStatus: (contentId: string, status: ContentItem["status"], score?: number) => void;
-  addFolder: (productId: string, folderName: string) => string; // returns new folder id
+  addFolder: (productId: string, folderName: string) => string;
+  getProductPrompts: (productId: string) => ProductPrompt[];
+  addPromptsToProduct: (productId: string, prompts: Omit<ProductPrompt, "id" | "addedAt">[]) => void;
 }
 
 const ContentContext = createContext<ContentContextValue | null>(null);
@@ -343,7 +345,7 @@ export function ContentProvider({ children }: { children: ReactNode }) {
 
   return (
     <ContentContext.Provider
-      value={{ products, getAnalysis, findContent, addContentItem, updateItemStatus, addFolder }}
+      value={{ products, getAnalysis, findContent, addContentItem, updateItemStatus, addFolder, getProductPrompts, addPromptsToProduct }}
     >
       {children}
     </ContentContext.Provider>

@@ -7,7 +7,7 @@ import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { ScoreRing } from "@/components/dashboard/ScoreRing";
 import { ScoreBar } from "@/components/dashboard/ScoreBar";
-import { getProductPrompts, CONTENT_ANALYSIS } from "@/data/products";
+import { CONTENT_ANALYSIS } from "@/data/products";
 import { useContent } from "@/contexts/ContentContext";
 
 const SCORE_DIMENSIONS = [
@@ -32,7 +32,7 @@ function ScoreBadge({ score }: { score: number | null }) {
 
 export default function AnalysisPage() {
   const navigate = useNavigate();
-  const { products } = useContent();
+  const { products, getProductPrompts } = useContent();
   const [selectedProductId, setSelectedProductId] = useState(() => products[0]?.id ?? "");
   const [running, setRunning] = useState(false);
 
