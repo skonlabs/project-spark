@@ -107,7 +107,7 @@ export default function ContentPage() {
           productName: p.name,
           folderId: f.id,
           folderName: f.name,
-          hasGaps: CONTENT_ANALYSIS[item.id]?.gaps.some((g) => g.severity === "critical") ?? false,
+          hasGaps: getAnalysis(item.id)?.gaps.some((g) => g.severity === "critical") ?? false,
         }))
       )
     ), [products]);

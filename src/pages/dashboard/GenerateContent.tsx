@@ -34,9 +34,9 @@ export default function GenerateContentPage() {
       f.items.map((item) => ({
         ...item,
         folderName: f.name,
-        analysis: CONTENT_ANALYSIS[item.id] ?? null,
-        gapCount: CONTENT_ANALYSIS[item.id]?.gaps.length ?? 0,
-        criticalGaps: CONTENT_ANALYSIS[item.id]?.gaps.filter((g) => g.severity === "critical").length ?? 0,
+        analysis: getAnalysis(item.id),
+        gapCount: getAnalysis(item.id)?.gaps.length ?? 0,
+        criticalGaps: getAnalysis(item.id)?.gaps.filter((g) => g.severity === "critical").length ?? 0,
       }))
     ).filter((i) => i.status === "analyzed")
      .sort((a, b) => (a.score ?? 999) - (b.score ?? 999)); // worst first
