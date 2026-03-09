@@ -3,9 +3,11 @@ import { Link, useNavigate } from "react-router-dom";
 import { ArrowRight, Eye, EyeOff, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function RegisterPage() {
   const navigate = useNavigate();
+  const { signUp } = useAuth();
   const [form, setForm] = useState({ full_name: "", email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -14,19 +16,18 @@ export default function RegisterPage() {
     e.preventDefault();
     if (form.password.length < 8) { toast.error("Password must be at least 8 characters"); return; }
     setLoading(true);
-    try {
-      const demoUser = { full_name: form.full_name, email: form.email };
-      localStorage.setItem("access_token", "demo-token");
-      localStorage.setItem("user", JSON.stringify(demoUser));
-      toast.success("Account created! Welcome to GAEO.");
-      navigate("/dashboard");
-    } catch { toast.error("Registration failed"); }
-    finally { setLoading(false); }
+    const { error } = await signUp(form.email, form.password, form.full_name);
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success("Account created! Check your email to confirm, then sign in.");
+      navigate("/auth/login");
+    }
+    setLoading(false);
   }
 
   return (
     <div className="min-h-screen flex bg-background">
-      {/* Left branding */}
       <div className="hidden lg:flex lg:w-[45%] relative items-center justify-center border-r border-border bg-card/30">
         <motion.div initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5 }} className="max-w-[340px] px-12">
           <div className="flex items-center gap-2 mb-10">
@@ -50,7 +51,6 @@ export default function RegisterPage() {
         </motion.div>
       </div>
 
-      {/* Right form */}
       <div className="flex-1 flex items-center justify-center px-6">
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="w-full max-w-[360px]">
           <div className="lg:hidden flex items-center justify-center gap-2 mb-10">

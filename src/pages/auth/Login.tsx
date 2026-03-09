@@ -3,9 +3,11 @@ import { Link, useNavigate } from "react-router-dom";
 import { ArrowRight, Eye, EyeOff, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const { signIn } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -14,22 +16,18 @@ export default function LoginPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
-    try {
-      const demoUser = { full_name: "Demo User", email };
-      localStorage.setItem("access_token", "demo-token");
-      localStorage.setItem("user", JSON.stringify(demoUser));
+    const { error } = await signIn(email, password);
+    if (error) {
+      toast.error(error.message);
+    } else {
       toast.success("Welcome back!");
       navigate("/dashboard");
-    } catch {
-      toast.error("Login failed");
-    } finally {
-      setLoading(false);
     }
+    setLoading(false);
   }
 
   return (
     <div className="min-h-screen flex bg-background">
-      {/* Left branding */}
       <div className="hidden lg:flex lg:w-[45%] relative items-center justify-center border-r border-border bg-card/30">
         <motion.div initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5 }} className="max-w-[340px] px-12">
           <div className="flex items-center gap-2 mb-10">
@@ -52,7 +50,6 @@ export default function LoginPage() {
         </motion.div>
       </div>
 
-      {/* Right form */}
       <div className="flex-1 flex items-center justify-center px-6">
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="w-full max-w-[360px]">
           <div className="lg:hidden flex items-center justify-center gap-2 mb-10">
