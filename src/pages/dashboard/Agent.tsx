@@ -140,7 +140,7 @@ export default function AgentPage() {
             >
               <span className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform mt-0.5 ${agentEnabled ? "translate-x-4" : "translate-x-0.5"}`} />
             </button>
-            <span className={`text-xs ${agentEnabled ? "text-green-400" : "text-muted-foreground"}`}>
+            <span className={`text-xs ${agentEnabled ? "text-emerald-600" : "text-muted-foreground"}`}>
               {agentEnabled ? "Active" : "Paused"}
             </span>
           </div>
