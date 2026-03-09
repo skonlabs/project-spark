@@ -14,20 +14,9 @@ import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { ScoreRing } from "@/components/dashboard/ScoreRing";
 import { ScoreBar } from "@/components/dashboard/ScoreBar";
-import { getProductPrompts } from "@/data/products";
+import { INTENT_DEFINITIONS } from "@/data/products";
 import { useContent } from "@/contexts/ContentContext";
 import type { AnalysisReport } from "@/types";
-
-const PRODUCT_ID = "product-gaeo";
-
-const INTENT_LABELS: Record<string, string> = {
-  seek_explanation: "Explain / What is",
-  find_best: "Find the best",
-  compare: "Compare options",
-  learn_howto: "Learn how-to",
-  find_alternative: "Find alternatives",
-  troubleshoot: "Troubleshoot / Fix",
-};
 
 const SCORE_DIMENSIONS = [
   { key: "entity_clarity", label: "Entity Clarity", description: "How clearly your product entity is defined", score: 65 },
@@ -110,8 +99,8 @@ export default function AnalysisPage() {
   const [activeTab, setActiveTab] = useState<"score" | "recommendations" | "gaps" | "roadmap">("score");
   const [running, setRunning] = useState(false);
   const navigate = useNavigate();
-  const { products } = useContent();
-  const [selectedProductId, setSelectedProductId] = useState(() => products[0]?.id ?? PRODUCT_ID);
+  const { products, getProductPrompts } = useContent();
+  const [selectedProductId, setSelectedProductId] = useState(() => products[0]?.id ?? "");
 
   const selectedProduct = useMemo(
     () => products.find((p) => p.id === selectedProductId) ?? products[0],
@@ -330,6 +319,7 @@ export default function AnalysisPage() {
 
       {/* Content Gaps */}
       {activeTab === "gaps" && (() => {
+        const intentLabelMap = Object.fromEntries(INTENT_DEFINITIONS.map((d) => [d.id, d.label]));
         const allPrompts = getProductPrompts(selectedProductId);
         const coveredPrompts = allPrompts.filter((p) => p.covered);
         const gapPrompts = allPrompts.filter((p) => !p.covered);
@@ -392,7 +382,7 @@ export default function AnalysisPage() {
                           <AlertCircle className="h-4 w-4 text-red-400 flex-shrink-0" />
                           <div className="flex-1 min-w-0">
                             <p className="text-sm">{p.text}</p>
-                            <p className="text-xs text-muted-foreground mt-0.5">{INTENT_LABELS[p.intent] ?? p.intent}</p>
+                            <p className="text-xs text-muted-foreground mt-0.5">{intentLabelMap[p.intent] ?? p.intent}</p>
                           </div>
                           <button
                             onClick={() => { navigate("/dashboard/content"); toast.success(`Opening content generator for: "${p.text}"`); }}
@@ -417,7 +407,7 @@ export default function AnalysisPage() {
                         <div key={p.id} className="flex items-center gap-3 px-4 py-2.5">
                           <Zap className="h-4 w-4 text-green-400 flex-shrink-0" />
                           <p className="text-sm flex-1">{p.text}</p>
-                          <span className="text-xs text-muted-foreground">{INTENT_LABELS[p.intent] ?? p.intent}</span>
+                          <span className="text-xs text-muted-foreground">{intentLabelMap[p.intent] ?? p.intent}</span>
                         </div>
                       ))}
                     </div>
@@ -548,7 +538,7 @@ export default function AnalysisPage() {
                       <Sparkles className="h-3 w-3" /> Generate Content
                     </button>
                     <button
-                      onClick={() => { navigate("/dashboard/simulation"); toast.success("Added prompts to simulation queue"); }}
+                      onClick={() => { navigate("/dashboard/prompts"); toast.success("Opening Prompt Engine — use Quick Simulate tab"); }}
                       className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
                     >
                       <Play className="h-3 w-3" /> Test in Simulation

@@ -20,8 +20,7 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import {
-  getProductPrompts,
-  addPromptsToProduct,
+  INTENT_DEFINITIONS,
   type GapSeverity,
   type LLMIntentType,
 } from "@/data/products";
@@ -35,15 +34,6 @@ type Tone = "professional" | "conversational" | "technical";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-// LLM interaction intents — how users interact with AI when searching
-const INTENTS: Array<{ id: LLMIntentType; label: string; desc: string; example: string }> = [
-  { id: "seek_explanation", label: "Explain / What is", desc: "User asks the AI to explain or define something", example: '"What is AI observability?"' },
-  { id: "find_best", label: "Find the best", desc: "User asks for top tools, platforms, or recommendations", example: '"Best LLM monitoring tools 2026"' },
-  { id: "compare", label: "Compare options", desc: "User compares two or more products side-by-side", example: '"GAEO vs LangSmith"' },
-  { id: "learn_howto", label: "Learn how-to", desc: "User wants step-by-step guidance or instructions", example: '"How to monitor LLM apps in prod?"' },
-  { id: "find_alternative", label: "Find alternatives", desc: "User is looking for alternatives to an existing tool", example: '"LangSmith alternatives"' },
-  { id: "troubleshoot", label: "Troubleshoot / Fix", desc: "User is diagnosing a problem or seeking a fix", example: '"Why is my LLM giving wrong answers?"' },
-];
 
 // Demo prompts generated from content analysis, grouped by intent
 const DEMO_GENERATED_PROMPTS: Array<{ text: string; intent: LLMIntentType }> = [
@@ -221,7 +211,7 @@ AI visibility is the new SEO. The companies that invest in AI-optimized content 
 export default function ContentDetailPage() {
   const { contentId } = useParams<{ contentId: string }>();
   const navigate = useNavigate();
-  const { findContent, getAnalysis } = useContent();
+  const { findContent, getAnalysis, getProductPrompts, addPromptsToProduct } = useContent();
 
   const [activeTab, setActiveTab] = useState<Tab>("original");
 
@@ -750,7 +740,7 @@ export default function ContentDetailPage() {
 
                   {generatedPrompts && !isGeneratingPrompts && (() => {
                     const existingInDb = new Set(getProductPrompts(product.id).map((p) => p.text.toLowerCase()));
-                    const intentGroups = INTENTS.map((intent) => ({
+                    const intentGroups = INTENT_DEFINITIONS.map((intent) => ({
                       intent,
                       prompts: generatedPrompts.filter((p) => p.intent === intent.id),
                     })).filter((g) => g.prompts.length > 0);
@@ -849,7 +839,7 @@ export default function ContentDetailPage() {
                   </label>
                   <p className="text-xs text-muted-foreground mb-2">How is the user interacting with the LLM when they find this content?</p>
                   <div className="grid grid-cols-2 gap-2">
-                    {INTENTS.map((i) => (
+                    {INTENT_DEFINITIONS.map((i) => (
                       <button
                         key={i.id}
                         onClick={() => setIntent(i.id)}

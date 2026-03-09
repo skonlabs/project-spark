@@ -716,7 +716,7 @@ export function getAllContent(): Array<{ product: Product; folder: Folder; item:
   return results;
 }
 
-// ─── Prompt Database ──────────────────────────────────────────────────────────
+// ─── Prompt / Intent Types ────────────────────────────────────────────────────
 
 export type LLMIntentType =
   | "seek_explanation"
@@ -734,47 +734,41 @@ export interface ProductPrompt {
   addedAt: string;
 }
 
-// Keyed by product ID — starts with some baseline prompts for GAEO Platform
-const _promptDatabase: Record<string, ProductPrompt[]> = {
+/** Canonical intent definitions — single source of truth used across all pages */
+export const INTENT_DEFINITIONS: Array<{
+  id: LLMIntentType;
+  label: string;
+  desc: string;
+  example: string;
+}> = [
+  { id: "seek_explanation", label: "Explain / What is", desc: "User asks the AI to explain or define something", example: '"What is AI observability?"' },
+  { id: "find_best",        label: "Find the best",    desc: "User asks for top tools, platforms, or recommendations", example: '"Best LLM monitoring tools 2026"' },
+  { id: "compare",          label: "Compare options",  desc: "User compares two or more products side-by-side", example: '"GAEO vs LangSmith"' },
+  { id: "learn_howto",      label: "Learn how-to",     desc: "User wants step-by-step guidance or instructions", example: '"How to monitor LLM apps in prod?"' },
+  { id: "find_alternative", label: "Find alternatives", desc: "User is looking for alternatives to an existing tool", example: '"LangSmith alternatives"' },
+  { id: "troubleshoot",     label: "Troubleshoot / Fix", desc: "User is diagnosing a problem or seeking a fix", example: '"Why is my LLM giving wrong answers?"' },
+];
+
+/** Initial prompt database seed — owned by ContentContext as React state */
+export const INITIAL_PROMPT_DATABASE: Record<string, ProductPrompt[]> = {
   "product-gaeo": [
-    { id: "pp1", text: "What is AI observability?", intent: "seek_explanation", covered: true, addedAt: "2026-03-01T00:00:00Z" },
-    { id: "pp2", text: "What is LLM monitoring?", intent: "seek_explanation", covered: true, addedAt: "2026-03-01T00:00:00Z" },
-    { id: "pp3", text: "What is an AI observability platform?", intent: "seek_explanation", covered: false, addedAt: "2026-03-01T00:00:00Z" },
-    { id: "pp4", text: "Best AI observability tools 2026", intent: "find_best", covered: false, addedAt: "2026-03-02T00:00:00Z" },
-    { id: "pp5", text: "Best LLM monitoring platforms", intent: "find_best", covered: false, addedAt: "2026-03-02T00:00:00Z" },
-    { id: "pp6", text: "Best prompt analytics tools", intent: "find_best", covered: true, addedAt: "2026-03-02T00:00:00Z" },
-    { id: "pp7", text: "GAEO Platform vs LangSmith", intent: "compare", covered: false, addedAt: "2026-03-03T00:00:00Z" },
-    { id: "pp8", text: "AI observability vs traditional monitoring", intent: "compare", covered: false, addedAt: "2026-03-03T00:00:00Z" },
-    { id: "pp9", text: "How to monitor LLM applications in production?", intent: "learn_howto", covered: false, addedAt: "2026-03-04T00:00:00Z" },
-    { id: "pp10", text: "How to track AI costs?", intent: "learn_howto", covered: true, addedAt: "2026-03-04T00:00:00Z" },
-    { id: "pp11", text: "LangSmith alternatives", intent: "find_alternative", covered: false, addedAt: "2026-03-05T00:00:00Z" },
-    { id: "pp12", text: "Datadog alternatives for LLM monitoring", intent: "find_alternative", covered: false, addedAt: "2026-03-05T00:00:00Z" },
-    { id: "pp13", text: "Why is my LLM giving inconsistent outputs?", intent: "troubleshoot", covered: false, addedAt: "2026-03-06T00:00:00Z" },
-    { id: "pp14", text: "How to reduce LLM hallucinations?", intent: "troubleshoot", covered: false, addedAt: "2026-03-06T00:00:00Z" },
+    { id: "pp1",  text: "What is AI observability?",                        intent: "seek_explanation",  covered: true,  addedAt: "2026-03-01T00:00:00Z" },
+    { id: "pp2",  text: "What is LLM monitoring?",                          intent: "seek_explanation",  covered: true,  addedAt: "2026-03-01T00:00:00Z" },
+    { id: "pp3",  text: "What is an AI observability platform?",            intent: "seek_explanation",  covered: false, addedAt: "2026-03-01T00:00:00Z" },
+    { id: "pp4",  text: "Best AI observability tools 2026",                 intent: "find_best",         covered: false, addedAt: "2026-03-02T00:00:00Z" },
+    { id: "pp5",  text: "Best LLM monitoring platforms",                    intent: "find_best",         covered: false, addedAt: "2026-03-02T00:00:00Z" },
+    { id: "pp6",  text: "Best prompt analytics tools",                      intent: "find_best",         covered: true,  addedAt: "2026-03-02T00:00:00Z" },
+    { id: "pp7",  text: "GAEO Platform vs LangSmith",                       intent: "compare",           covered: false, addedAt: "2026-03-03T00:00:00Z" },
+    { id: "pp8",  text: "AI observability vs traditional monitoring",        intent: "compare",           covered: false, addedAt: "2026-03-03T00:00:00Z" },
+    { id: "pp9",  text: "How to monitor LLM applications in production?",   intent: "learn_howto",       covered: false, addedAt: "2026-03-04T00:00:00Z" },
+    { id: "pp10", text: "How to track AI costs?",                           intent: "learn_howto",       covered: true,  addedAt: "2026-03-04T00:00:00Z" },
+    { id: "pp11", text: "LangSmith alternatives",                           intent: "find_alternative",  covered: false, addedAt: "2026-03-05T00:00:00Z" },
+    { id: "pp12", text: "Datadog alternatives for LLM monitoring",          intent: "find_alternative",  covered: false, addedAt: "2026-03-05T00:00:00Z" },
+    { id: "pp13", text: "Why is my LLM giving inconsistent outputs?",       intent: "troubleshoot",      covered: false, addedAt: "2026-03-06T00:00:00Z" },
+    { id: "pp14", text: "How to reduce LLM hallucinations?",                intent: "troubleshoot",      covered: false, addedAt: "2026-03-06T00:00:00Z" },
   ],
   "product-datasync": [],
 };
-
-let _nextPromptId = 100;
-
-export function getProductPrompts(productId: string): ProductPrompt[] {
-  return _promptDatabase[productId] ?? [];
-}
-
-export function addPromptsToProduct(productId: string, prompts: Omit<ProductPrompt, "id" | "addedAt">[]): void {
-  if (!_promptDatabase[productId]) _promptDatabase[productId] = [];
-  const existing = new Set(_promptDatabase[productId].map((p) => p.text.toLowerCase()));
-  for (const p of prompts) {
-    if (!existing.has(p.text.toLowerCase())) {
-      _promptDatabase[productId].push({
-        ...p,
-        id: `pp${_nextPromptId++}`,
-        addedAt: new Date().toISOString(),
-      });
-      existing.add(p.text.toLowerCase());
-    }
-  }
-}
 
 export function getProductStats(productId: string) {
   const product = MOCK_PRODUCTS.find((p) => p.id === productId);

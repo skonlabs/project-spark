@@ -2,24 +2,39 @@ import { createContext, useContext, useState, useCallback, type ReactNode } from
 import {
   MOCK_PRODUCTS,
   CONTENT_ANALYSIS,
+  INITIAL_PROMPT_DATABASE,
   type Product,
   type ContentItem,
   type ContentAnalysis,
   type ContentSourceType,
+  type ProductPrompt,
+  type LLMIntentType,
 } from "@/data/products";
 
-// ─── Dynamic content store (supplements MOCK_PRODUCTS) ────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const _dynamicAnalysis: Record<string, ContentAnalysis> = {};
+let _nextPromptId = 100;
 
 function generateMockAnalysis(item: ContentItem): ContentAnalysis {
-  const score = Math.floor(Math.random() * 30) + 35; // 35–65
+  const score = Math.floor(Math.random() * 30) + 35;
   return {
     score,
     analyzed_at: new Date().toISOString(),
     gaps: [
-      { id: "g1", label: "Missing entity definition", description: 'No clear "X is Y" statement found in the introduction.', severity: "critical", fix: "Add a one-sentence entity definition in the first paragraph." },
-      { id: "g2", label: "No FAQ section", description: "FAQ content is cited 3.2× more often by LLMs.", severity: "high", fix: "Add 5–7 Q&A pairs covering common user questions." },
+      {
+        id: "g1",
+        label: "Missing entity definition",
+        description: 'No clear "X is Y" statement found in the introduction.',
+        severity: "critical",
+        fix: "Add a one-sentence entity definition in the first paragraph.",
+      },
+      {
+        id: "g2",
+        label: "No FAQ section",
+        description: "FAQ content is cited 3.2× more often by LLMs.",
+        severity: "high",
+        fix: "Add 5–7 Q&A pairs covering common user questions.",
+      },
     ],
     dimension_scores: [
       { label: "Entity Clarity", score: Math.floor(score * 0.8), max: 100 },
@@ -35,7 +50,7 @@ function generateMockAnalysis(item: ContentItem): ContentAnalysis {
   };
 }
 
-// ─── Context ──────────────────────────────────────────────────────────────────
+// ─── Context shape ─────────────────────────────────────────────────────────────
 
 interface ContentContextValue {
   products: Product[];
@@ -48,8 +63,11 @@ interface ContentContextValue {
     url: string;
     source_type: ContentSourceType;
     word_count?: number;
-  }) => string; // returns new item id
+  }) => string;
   updateItemStatus: (contentId: string, status: ContentItem["status"], score?: number) => void;
+  // Prompt database — owned by context so changes trigger re-renders everywhere
+  getProductPrompts: (productId: string) => ProductPrompt[];
+  addPromptsToProduct: (productId: string, prompts: Omit<ProductPrompt, "id" | "addedAt">[]) => void;
 }
 
 const ContentContext = createContext<ContentContextValue | null>(null);
@@ -58,18 +76,24 @@ const ContentContext = createContext<ContentContextValue | null>(null);
 
 export function ContentProvider({ children }: { children: ReactNode }) {
   const [products, setProducts] = useState<Product[]>(() =>
-    // deep-clone so mutations don't affect the original const
     MOCK_PRODUCTS.map((p) => ({
       ...p,
       folders: p.folders.map((f) => ({ ...f, items: [...f.items] })),
     }))
   );
 
+  // Analysis results: static mock data + dynamically generated results
+  const [dynamicAnalysis, setDynamicAnalysis] = useState<Record<string, ContentAnalysis>>({});
+
+  // Prompt database lives in React state so any change triggers re-renders
+  const [promptDatabase, setPromptDatabase] = useState<Record<string, ProductPrompt[]>>(
+    () => JSON.parse(JSON.stringify(INITIAL_PROMPT_DATABASE)) // deep-clone initial data
+  );
+
   const getAnalysis = useCallback(
-    (contentId: string): ContentAnalysis | null => {
-      return _dynamicAnalysis[contentId] ?? CONTENT_ANALYSIS[contentId] ?? null;
-    },
-    []
+    (contentId: string): ContentAnalysis | null =>
+      dynamicAnalysis[contentId] ?? CONTENT_ANALYSIS[contentId] ?? null,
+    [dynamicAnalysis]
   );
 
   const findContent = useCallback(
@@ -87,7 +111,14 @@ export function ContentProvider({ children }: { children: ReactNode }) {
   );
 
   const addContentItem = useCallback(
-    ({ productId, folderId, title, url, source_type, word_count }: {
+    ({
+      productId,
+      folderId,
+      title,
+      url,
+      source_type,
+      word_count,
+    }: {
       productId: string;
       folderId: string;
       title: string;
@@ -105,7 +136,7 @@ export function ContentProvider({ children }: { children: ReactNode }) {
         score: null,
         word_count: word_count ?? null,
         ingested_at: new Date().toISOString(),
-        raw_content: `# ${title}\n\nContent ingested from ${url}.\n\nThis content is being processed and analysed for AI visibility. The analysis will complete shortly and you will be able to view gaps, recommendations, and generate an AI-enhanced version.\n\n## About this content\n\nSource: ${url}\nIngested: ${new Date().toLocaleString()}\nType: ${source_type}\n`,
+        raw_content: `# ${title}\n\nContent ingested from ${url}.\n\nThis content is being processed and analysed for AI visibility. The analysis will complete shortly.\n\n## About this content\n\nSource: ${url}\nIngested: ${new Date().toLocaleString()}\nType: ${source_type}\n`,
       };
 
       setProducts((prev) =>
@@ -128,41 +159,72 @@ export function ContentProvider({ children }: { children: ReactNode }) {
 
   const updateItemStatus = useCallback(
     (contentId: string, status: ContentItem["status"], score?: number) => {
-      setProducts((prev) =>
-        prev.map((p) => ({
+      // Single setProducts call that handles both status update and analysis generation
+      setProducts((prev) => {
+        let analyzedItem: ContentItem | null = null;
+
+        const next = prev.map((p) => ({
           ...p,
           folders: p.folders.map((f) => ({
             ...f,
-            items: f.items.map((item) =>
-              item.id === contentId
-                ? { ...item, status, score: score ?? item.score }
-                : item
-            ),
+            items: f.items.map((item) => {
+              if (item.id !== contentId) return item;
+              const updated = { ...item, status, score: score ?? item.score };
+              if (status === "analyzed") analyzedItem = updated;
+              return updated;
+            }),
           })),
-        }))
-      );
+        }));
 
-      // Generate mock analysis when analysis completes
-      if (status === "analyzed") {
-        setProducts((prev) => {
-          for (const p of prev) {
-            for (const f of p.folders) {
-              const item = f.items.find((i) => i.id === contentId);
-              if (item) {
-                _dynamicAnalysis[contentId] = generateMockAnalysis(item);
-              }
-            }
-          }
-          return prev;
-        });
-      }
+        // If analysis just completed, generate mock analysis result
+        if (analyzedItem) {
+          setDynamicAnalysis((prev) => ({
+            ...prev,
+            [contentId]: generateMockAnalysis(analyzedItem!),
+          }));
+        }
+
+        return next;
+      });
+    },
+    []
+  );
+
+  const getProductPrompts = useCallback(
+    (productId: string): ProductPrompt[] => promptDatabase[productId] ?? [],
+    [promptDatabase]
+  );
+
+  const addPromptsToProduct = useCallback(
+    (productId: string, prompts: Omit<ProductPrompt, "id" | "addedAt">[]) => {
+      setPromptDatabase((prev) => {
+        const existing = prev[productId] ?? [];
+        const existingTexts = new Set(existing.map((p) => p.text.toLowerCase()));
+        const toAdd: ProductPrompt[] = prompts
+          .filter((p) => !existingTexts.has(p.text.toLowerCase()))
+          .map((p) => ({
+            ...p,
+            id: `pp${_nextPromptId++}`,
+            addedAt: new Date().toISOString(),
+          }));
+        if (toAdd.length === 0) return prev;
+        return { ...prev, [productId]: [...existing, ...toAdd] };
+      });
     },
     []
   );
 
   return (
     <ContentContext.Provider
-      value={{ products, getAnalysis, findContent, addContentItem, updateItemStatus }}
+      value={{
+        products,
+        getAnalysis,
+        findContent,
+        addContentItem,
+        updateItemStatus,
+        getProductPrompts,
+        addPromptsToProduct,
+      }}
     >
       {children}
     </ContentContext.Provider>
