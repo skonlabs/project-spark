@@ -128,7 +128,7 @@ export default function CompetitivePage() {
             </div>
             <div className="h-2 bg-muted/60 rounded-full mb-4 overflow-hidden">
               <motion.div className="h-full rounded-full" initial={{ width: 0 }} animate={{ width: `${comp.share}%` }} transition={{ duration: 0.8, delay: 0.2 + i * 0.1 }}
-                style={{ background: comp.isYou ? "#6366f1" : COLORS[Math.min(i + 1, COLORS.length - 1)], boxShadow: `0 0 8px ${comp.isYou ? "rgb(99 102 241 / 0.3)" : "transparent"}` }}
+                style={{ background: comp.isYou ? "hsl(32, 95%, 44%)" : COLORS[Math.min(i + 1, COLORS.length - 1)], boxShadow: `0 0 8px ${comp.isYou ? "hsl(32 95% 44% / 0.3)" : "transparent"}` }}
               />
             </div>
             {comp.strengths.length > 0 && (
