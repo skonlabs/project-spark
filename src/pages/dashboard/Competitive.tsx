@@ -78,7 +78,7 @@ export default function CompetitivePage() {
       <div>
         <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-3">Select Product</p>
         <div className="flex gap-2 flex-wrap">
-          {MOCK_PRODUCTS.map((p) => (
+          {products.map((p) => (
             <button key={p.id} onClick={() => setSelectedProduct(p.id)} className={`inline-flex items-center gap-1.5 rounded-xl border px-4 py-2.5 text-sm font-semibold transition-all ${selectedProduct === p.id ? "border-primary/30 bg-primary/10 text-foreground shadow-sm" : "border-border/60 text-muted-foreground hover:text-foreground hover:bg-accent"}`}>
               <Package2 className="h-3.5 w-3.5" /> {p.name}
             </button>
