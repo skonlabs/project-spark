@@ -17,6 +17,7 @@ import {
   Send,
   Sparkles,
   X,
+  Wand2,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import {
@@ -25,6 +26,7 @@ import {
   type LLMIntentType,
 } from "@/data/products";
 import { useContent } from "@/contexts/ContentContext";
+import { ScoreRing } from "@/components/dashboard/ScoreRing";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -33,23 +35,6 @@ type Tab = "original" | "analysis" | "generate" | "editor" | "publish";
 type Tone = "professional" | "conversational" | "technical";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-
-
-// Demo prompts generated from content analysis, grouped by intent
-const DEMO_GENERATED_PROMPTS: Array<{ text: string; intent: LLMIntentType }> = [
-  { text: "What is AI observability?", intent: "seek_explanation" },
-  { text: "How does AI observability work?", intent: "seek_explanation" },
-  { text: "What is LLM monitoring and why does it matter?", intent: "seek_explanation" },
-  { text: "Best AI observability platforms 2026", intent: "find_best" },
-  { text: "Top LLM monitoring tools for production", intent: "find_best" },
-  { text: "GAEO Platform vs LangSmith — which is better?", intent: "compare" },
-  { text: "AI observability vs traditional APM monitoring", intent: "compare" },
-  { text: "How to set up LLM monitoring in production?", intent: "learn_howto" },
-  { text: "How to detect model drift in production?", intent: "learn_howto" },
-  { text: "LangSmith alternatives for AI monitoring", intent: "find_alternative" },
-  { text: "Open source LLM observability tools", intent: "find_alternative" },
-  { text: "Why is my LLM giving inconsistent outputs?", intent: "troubleshoot" },
-];
 
 const ENHANCEMENTS = [
   { id: "entity_definition", label: "Add entity definition block", desc: "Clear 'X is Y' statement in intro" },
@@ -94,34 +79,6 @@ function GapBadge({ severity }: { severity: GapSeverity }) {
   );
 }
 
-function ScoreRing({ score }: { score: number }) {
-  const color =
-    score >= 65 ? "#22c55e" : score >= 45 ? "#eab308" : "#ef4444";
-  const r = 48;
-  const circ = 2 * Math.PI * r;
-  const dash = (score / 100) * circ;
-  return (
-    <div className="relative flex items-center justify-center">
-      <svg width={120} height={120} viewBox="0 0 120 120">
-        <circle cx={60} cy={60} r={r} fill="none" stroke="hsl(217.2 32.6% 17.5%)" strokeWidth={10} />
-        <circle
-          cx={60} cy={60} r={r}
-          fill="none"
-          stroke={color}
-          strokeWidth={10}
-          strokeDasharray={`${dash} ${circ}`}
-          strokeLinecap="round"
-          transform="rotate(-90 60 60)"
-        />
-      </svg>
-      <div className="absolute flex flex-col items-center">
-        <span className="text-2xl font-bold">{score}</span>
-        <span className="text-[10px] text-muted-foreground">/100</span>
-      </div>
-    </div>
-  );
-}
-
 function MiniBar({ label, score, max }: { label: string; score: number; max: number }) {
   const pct = (score / max) * 100;
   const color = pct >= 65 ? "bg-green-400" : pct >= 45 ? "bg-yellow-400" : "bg-red-400";
@@ -136,6 +93,67 @@ function MiniBar({ label, score, max }: { label: string; score: number; max: num
       </span>
     </div>
   );
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+/**
+ * Generate intent-aware prompts for the given product and content.
+ * These are contextual — they reference the actual product name and category
+ * rather than being hardcoded to a specific product.
+ */
+function generatePromptsForContent(
+  productName: string,
+  category: string,
+): Array<{ text: string; intent: LLMIntentType }> {
+  const year = new Date().getFullYear();
+  return [
+    { text: `What is ${productName}?`, intent: "seek_explanation" },
+    { text: `How does ${productName} work?`, intent: "seek_explanation" },
+    { text: `What is ${category} and why does it matter?`, intent: "seek_explanation" },
+    { text: `Best ${category} platforms ${year}`, intent: "find_best" },
+    { text: `Top ${category} tools for enterprise teams`, intent: "find_best" },
+    { text: `${productName} vs competitors — which is better?`, intent: "compare" },
+    { text: `${category} tools compared — features and pricing`, intent: "compare" },
+    { text: `How to get started with ${productName}?`, intent: "learn_howto" },
+    { text: `How to implement ${category} in production?`, intent: "learn_howto" },
+    { text: `${productName} alternatives`, intent: "find_alternative" },
+    { text: `Open source ${category} tools`, intent: "find_alternative" },
+    { text: `Why is my ${category} solution not performing?`, intent: "troubleshoot" },
+  ];
+}
+
+/**
+ * Map a gap label to the enhancements that best address it.
+ * Returns a partial record — only enhancements that should be enabled.
+ */
+function getEnhancementsForGap(gapLabel: string): Partial<Record<string, boolean>> {
+  const label = gapLabel.toLowerCase();
+  const result: Partial<Record<string, boolean>> = {};
+  if (label.includes("entity") || label.includes("definition") || label.includes("product description") || label.includes("what is")) {
+    result.entity_definition = true;
+  }
+  if (label.includes("faq") || label.includes("q&a") || label.includes("question")) {
+    result.faq_injection = true;
+  }
+  if (label.includes("comparison") || label.includes("vs") || label.includes("alternative")) {
+    result.comparison_table = true;
+  }
+  if (label.includes("heading") || label.includes("structure") || label.includes("h2") || label.includes("h3")) {
+    result.heading_optimization = true;
+  }
+  if (label.includes("keyword") || label.includes("density")) {
+    result.keyword_density = true;
+  }
+  if (label.includes("people also") || label.includes("paa")) {
+    result.people_also_ask = true;
+  }
+  // Default: enable entity_definition if nothing matches
+  if (Object.keys(result).length === 0) {
+    result.entity_definition = true;
+    result.faq_injection = true;
+  }
+  return result;
 }
 
 // ─── Generated content template ───────────────────────────────────────────────
@@ -220,7 +238,7 @@ export default function ContentDetailPage() {
 
   // Prompts tab state
   const [isGeneratingPrompts, setIsGeneratingPrompts] = useState(false);
-  const [generatedPrompts, setGeneratedPrompts] = useState<typeof DEMO_GENERATED_PROMPTS | null>(null);
+  const [generatedPrompts, setGeneratedPrompts] = useState<Array<{ text: string; intent: LLMIntentType }> | null>(null);
   const [selectedPrompts, setSelectedPrompts] = useState<Set<string>>(new Set());
 
   // Generate state
@@ -363,9 +381,10 @@ export default function ContentDetailPage() {
     setIsGeneratingPrompts(true);
     setSelectedPrompts(new Set());
     setTimeout(() => {
-      setGeneratedPrompts(DEMO_GENERATED_PROMPTS);
+      const prompts = generatePromptsForContent(product.name, product.category);
+      setGeneratedPrompts(prompts);
       setIsGeneratingPrompts(false);
-      toast.success("12 prompts generated from your content!");
+      toast.success(`${prompts.length} prompts generated from your content!`);
     }, 1600);
   }
 
@@ -385,6 +404,19 @@ export default function ContentDetailPage() {
     addPromptsToProduct(product.id, toAdd);
     toast.success(`${toAdd.length} prompt${toAdd.length !== 1 ? "s" : ""} added to product prompt database!`);
     setSelectedPrompts(new Set());
+  }
+
+  /** Pre-configure the Generate tab with enhancements targeting a specific gap, then switch to it. */
+  function handleFixGap(gapLabel: string) {
+    const suggested = getEnhancementsForGap(gapLabel);
+    setEnhancements((prev) => ({
+      ...prev,
+      ...Object.fromEntries(
+        Object.entries(suggested).map(([k, v]) => [k, v ?? prev[k]])
+      ),
+    }));
+    setActiveTab("generate");
+    toast.success(`Generate tab configured to fix: "${gapLabel}"`);
   }
 
   const tabs: Array<{ id: Tab; label: string; step: number }> = [
@@ -541,7 +573,7 @@ export default function ContentDetailPage() {
             ) : (
               <div className="rounded-xl border border-border bg-muted/10 p-6">
                 <pre className="text-sm text-foreground whitespace-pre-wrap font-sans leading-relaxed">
-                  {item.raw_content ?? "No content preview available."}
+                  {activeContent}
                 </pre>
               </div>
             )}
@@ -587,9 +619,8 @@ export default function ContentDetailPage() {
                 {/* Score + dimensions */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   <div className="rounded-xl border border-border bg-card p-6 flex flex-col items-center gap-2">
-                    <ScoreRing score={analysis.score} />
-                    <p className="text-sm font-medium">AI Visibility Score</p>
-                    <p className="text-xs text-muted-foreground text-center">
+                    <ScoreRing score={analysis.score} size={120} strokeWidth={10} />
+                    <p className="text-xs text-muted-foreground text-center mt-1">
                       for "{item.title}"
                     </p>
                     <button
@@ -651,19 +682,26 @@ export default function ContentDetailPage() {
                             }`}
                           />
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
+                            <div className="flex items-center gap-2 mb-1 flex-wrap">
                               <p className="font-medium text-sm">{gap.label}</p>
                               <GapBadge severity={gap.severity} />
                             </div>
                             <p className="text-xs text-muted-foreground mb-2">
                               {gap.description}
                             </p>
-                            <div className="rounded-lg bg-background/60 border border-border/50 px-3 py-2">
+                            <div className="rounded-lg bg-background/60 border border-border/50 px-3 py-2 mb-2">
                               <p className="text-xs font-medium text-muted-foreground mb-0.5">
                                 How to fix:
                               </p>
                               <p className="text-xs text-foreground">{gap.fix}</p>
                             </div>
+                            {/* Per-gap Generate Fix button */}
+                            <button
+                              onClick={() => handleFixGap(gap.label)}
+                              className="inline-flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 font-medium transition-colors"
+                            >
+                              <Wand2 className="h-3 w-3" /> Generate fix for this →
+                            </button>
                           </div>
                         </div>
                       </div>
@@ -740,9 +778,9 @@ export default function ContentDetailPage() {
 
                   {generatedPrompts && !isGeneratingPrompts && (() => {
                     const existingInDb = new Set(getProductPrompts(product.id).map((p) => p.text.toLowerCase()));
-                    const intentGroups = INTENT_DEFINITIONS.map((intent) => ({
-                      intent,
-                      prompts: generatedPrompts.filter((p) => p.intent === intent.id),
+                    const intentGroups = INTENT_DEFINITIONS.map((intentDef) => ({
+                      intent: intentDef,
+                      prompts: generatedPrompts.filter((p) => p.intent === intentDef.id),
                     })).filter((g) => g.prompts.length > 0);
                     const alreadyTrackedCount = generatedPrompts.filter((p) => existingInDb.has(p.text.toLowerCase())).length;
                     return (

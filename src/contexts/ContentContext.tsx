@@ -1,10 +1,11 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useRef, type ReactNode } from "react";
 import {
   MOCK_PRODUCTS,
   CONTENT_ANALYSIS,
   INITIAL_PROMPT_DATABASE,
   type Product,
   type ContentItem,
+  type Folder,
   type ContentAnalysis,
   type ContentSourceType,
   type ProductPrompt,
@@ -55,7 +56,7 @@ function generateMockAnalysis(item: ContentItem): ContentAnalysis {
 interface ContentContextValue {
   products: Product[];
   getAnalysis: (contentId: string) => ContentAnalysis | null;
-  findContent: (contentId: string) => { product: Product; folder: Product["folders"][0]; item: ContentItem } | null;
+  findContent: (contentId: string) => { product: Product; folder: Folder; item: ContentItem } | null;
   addContentItem: (params: {
     productId: string;
     folderId: string;
@@ -65,6 +66,7 @@ interface ContentContextValue {
     word_count?: number;
   }) => string;
   updateItemStatus: (contentId: string, status: ContentItem["status"], score?: number) => void;
+  addFolder: (productId: string, folderName: string) => string;
   // Prompt database — owned by context so changes trigger re-renders everywhere
   getProductPrompts: (productId: string) => ProductPrompt[];
   addPromptsToProduct: (productId: string, prompts: Omit<ProductPrompt, "id" | "addedAt">[]) => void;
@@ -89,6 +91,10 @@ export function ContentProvider({ children }: { children: ReactNode }) {
   const [promptDatabase, setPromptDatabase] = useState<Record<string, ProductPrompt[]>>(
     () => JSON.parse(JSON.stringify(INITIAL_PROMPT_DATABASE)) // deep-clone initial data
   );
+
+  // Store titles for dynamically ingested items so updateItemStatus can generate
+  // meaningful analysis without needing to read from stale closure state.
+  const itemTitlesRef = useRef<Record<string, string>>({});
 
   const getAnalysis = useCallback(
     (contentId: string): ContentAnalysis | null =>
@@ -139,6 +145,9 @@ export function ContentProvider({ children }: { children: ReactNode }) {
         raw_content: `# ${title}\n\nContent ingested from ${url}.\n\nThis content is being processed and analysed for AI visibility. The analysis will complete shortly.\n\n## About this content\n\nSource: ${url}\nIngested: ${new Date().toLocaleString()}\nType: ${source_type}\n`,
       };
 
+      // Store title so updateItemStatus can generate meaningful analysis
+      itemTitlesRef.current[id] = title;
+
       setProducts((prev) =>
         prev.map((p) =>
           p.id === productId
@@ -159,36 +168,44 @@ export function ContentProvider({ children }: { children: ReactNode }) {
 
   const updateItemStatus = useCallback(
     (contentId: string, status: ContentItem["status"], score?: number) => {
-      // Single setProducts call that handles both status update and analysis generation
-      setProducts((prev) => {
-        let analyzedItem: ContentItem | null = null;
-
-        const next = prev.map((p) => ({
+      // Update product item status — keep separate from analysis generation
+      // to avoid calling setState inside another setState's updater function.
+      setProducts((prev) =>
+        prev.map((p) => ({
           ...p,
           folders: p.folders.map((f) => ({
             ...f,
             items: f.items.map((item) => {
               if (item.id !== contentId) return item;
-              const updated = { ...item, status, score: score ?? item.score };
-              if (status === "analyzed") analyzedItem = updated;
-              return updated;
+              return { ...item, status, score: score ?? item.score };
             }),
           })),
+        }))
+      );
+
+      // Generate mock analysis result separately (not inside setProducts updater)
+      if (status === "analyzed") {
+        const title = itemTitlesRef.current[contentId] ?? "Ingested Content";
+        setDynamicAnalysis((prev) => ({
+          ...prev,
+          [contentId]: generateMockAnalysis({ id: contentId, title } as ContentItem),
         }));
-
-        // If analysis just completed, generate mock analysis result
-        if (analyzedItem) {
-          setDynamicAnalysis((prev) => ({
-            ...prev,
-            [contentId]: generateMockAnalysis(analyzedItem!),
-          }));
-        }
-
-        return next;
-      });
+      }
     },
     []
   );
+
+  const addFolder = useCallback((productId: string, folderName: string): string => {
+    const folderId = `folder-${Date.now()}`;
+    setProducts((prev) =>
+      prev.map((p) =>
+        p.id === productId
+          ? { ...p, folders: [...p.folders, { id: folderId, name: folderName, items: [] }] }
+          : p
+      )
+    );
+    return folderId;
+  }, []);
 
   const getProductPrompts = useCallback(
     (productId: string): ProductPrompt[] => promptDatabase[productId] ?? [],
@@ -222,6 +239,7 @@ export function ContentProvider({ children }: { children: ReactNode }) {
         findContent,
         addContentItem,
         updateItemStatus,
+        addFolder,
         getProductPrompts,
         addPromptsToProduct,
       }}

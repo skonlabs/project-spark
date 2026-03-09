@@ -6,6 +6,7 @@ import {
   File,
   Folder,
   FolderOpen,
+  FolderPlus,
   LogOut,
   Package2,
   Plus,
@@ -27,7 +28,7 @@ type IngestMethod = "url" | "file";
 export default function DashboardLayout() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { products, addContentItem, updateItemStatus } = useContent();
+  const { products, addContentItem, updateItemStatus, addFolder } = useContent();
   const [user, setUser] = useState<{ full_name: string; email: string } | null>(null);
 
   // Explorer state
@@ -44,6 +45,10 @@ export default function DashboardLayout() {
   const [ingestMethod, setIngestMethod] = useState<IngestMethod>("url");
   const [ingestUrl, setIngestUrl] = useState("");
   const [ingestLoading, setIngestLoading] = useState(false);
+
+  // New folder creation state (per-product inline input)
+  const [creatingFolderForProduct, setCreatingFolderForProduct] = useState<string | null>(null);
+  const [newFolderName, setNewFolderName] = useState("");
 
   useEffect(() => {
     const userData = localStorage.getItem("user");
@@ -98,9 +103,23 @@ export default function DashboardLayout() {
       }, 3000);
       setIngestLoading(false);
       setShowIngest(false);
+      // Ensure the folder is expanded so the new item is visible
+      setExpandedFolders((prev) => new Set([...prev, ingestTarget.folderId]));
       toast.success(`"${title}" added to ${ingestTarget.folderName} — analysing now…`);
       navigate(`/dashboard/content/${itemId}`);
     }, 1200);
+  }
+
+  function handleCreateFolder(productId: string) {
+    const name = newFolderName.trim();
+    if (!name) return;
+    const folderId = addFolder(productId, name);
+    // Auto-expand the product and the new folder
+    setExpandedProducts((prev) => new Set([...prev, productId]));
+    setExpandedFolders((prev) => new Set([...prev, folderId]));
+    setCreatingFolderForProduct(null);
+    setNewFolderName("");
+    toast.success(`Folder "${name}" created`);
   }
 
   function handleLogout() {
@@ -153,6 +172,7 @@ export default function DashboardLayout() {
             const isExpanded = expandedProducts.has(product.id);
             const allItems = product.folders.flatMap((f) => f.items);
             const analyzedCount = allItems.filter((i) => i.status === "analyzed").length;
+            const isCreatingFolder = creatingFolderForProduct === product.id;
 
             return (
               <div key={product.id}>
@@ -178,11 +198,56 @@ export default function DashboardLayout() {
                       {analyzedCount}/{allItems.length}
                     </span>
                   </Link>
+                  {/* New folder button */}
+                  <button
+                    onClick={() => {
+                      setCreatingFolderForProduct(isCreatingFolder ? null : product.id);
+                      setNewFolderName("");
+                      // Make sure product is expanded
+                      setExpandedProducts((prev) => new Set([...prev, product.id]));
+                    }}
+                    className="p-1 text-muted-foreground hover:text-foreground flex-shrink-0 transition-colors"
+                    title="New folder"
+                  >
+                    <FolderPlus className="h-3.5 w-3.5" />
+                  </button>
                 </div>
 
                 {/* Folders */}
                 {isExpanded && (
                   <div className="ml-5">
+                    {/* Inline new-folder input */}
+                    {isCreatingFolder && (
+                      <div className="flex items-center gap-1 px-2 py-1 mb-1">
+                        <input
+                          value={newFolderName}
+                          onChange={(e) => setNewFolderName(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") handleCreateFolder(product.id);
+                            if (e.key === "Escape") { setCreatingFolderForProduct(null); setNewFolderName(""); }
+                          }}
+                          placeholder="Folder name…"
+                          autoFocus
+                          className="flex-1 rounded border border-input bg-background px-2 py-0.5 text-xs focus:outline-none focus:ring-1 focus:ring-ring min-w-0"
+                        />
+                        <button
+                          onClick={() => handleCreateFolder(product.id)}
+                          disabled={!newFolderName.trim()}
+                          className="text-primary disabled:opacity-40 flex-shrink-0"
+                          title="Create"
+                        >
+                          <Plus className="h-3 w-3" />
+                        </button>
+                        <button
+                          onClick={() => { setCreatingFolderForProduct(null); setNewFolderName(""); }}
+                          className="text-muted-foreground hover:text-foreground flex-shrink-0"
+                          title="Cancel"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    )}
+
                     {product.folders.map((folder) => {
                       const isFolderOpen = expandedFolders.has(folder.id);
                       return (

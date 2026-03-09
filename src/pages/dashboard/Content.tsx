@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import {
   FileText, Globe, Loader2, Upload, Link as LinkIcon,
   CheckCircle2, Clock, AlertCircle, Github, Database,
-  Cloud, BookOpen, Code2, Zap, ExternalLink,
+  Cloud, BookOpen, Code2, Zap, ExternalLink, FolderPlus, X,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { useContent } from "@/contexts/ContentContext";
@@ -49,9 +49,11 @@ function titleFromUrl(url: string): string {
   }
 }
 
+const NEW_FOLDER_SENTINEL = "__new__";
+
 export default function ContentPage() {
   const navigate = useNavigate();
-  const { products, addContentItem, updateItemStatus } = useContent();
+  const { products, addContentItem, updateItemStatus, addFolder } = useContent();
 
   const [activeTab, setActiveTab] = useState<IngestTab>("upload");
   const [urlInput, setUrlInput] = useState("");
@@ -70,6 +72,11 @@ export default function ContentPage() {
   const [selectedProductId, setSelectedProductId] = useState(defaultProduct?.id ?? "");
   const selectedProduct = products.find((p) => p.id === selectedProductId) ?? products[0];
   const [selectedFolderId, setSelectedFolderId] = useState(selectedProduct?.folders[0]?.id ?? "");
+
+  // Folder creation state
+  const [showNewFolderInput, setShowNewFolderInput] = useState(false);
+  const [newFolderName, setNewFolderName] = useState("");
+
   const selectedFolder = selectedProduct?.folders.find((f) => f.id === selectedFolderId) ?? selectedProduct?.folders[0];
 
   const allItems = products.flatMap((p) =>
@@ -92,6 +99,16 @@ export default function ContentPage() {
   });
 
   const selectedGitOption = GIT_OPTIONS.find((g) => g.id === gitPlatform)!;
+
+  function handleCreateFolder() {
+    const name = newFolderName.trim();
+    if (!name || !selectedProduct) return;
+    const folderId = addFolder(selectedProduct.id, name);
+    setSelectedFolderId(folderId);
+    setNewFolderName("");
+    setShowNewFolderInput(false);
+    toast.success(`Folder "${name}" created`);
+  }
 
   function ingest(
     title: string,
@@ -136,31 +153,74 @@ export default function ContentPage() {
       </div>
 
       {/* Target selector */}
-      <div className="rounded-xl border border-border bg-card p-4 flex flex-wrap items-center gap-4">
-        <span className="text-sm font-medium text-muted-foreground">Ingest into:</span>
-        <select
-          value={selectedProductId}
-          onChange={(e) => {
-            setSelectedProductId(e.target.value);
-            const p = products.find((p) => p.id === e.target.value);
-            setSelectedFolderId(p?.folders[0]?.id ?? "");
-          }}
-          className="rounded-lg border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
-        >
-          {products.map((p) => (
-            <option key={p.id} value={p.id}>{p.name}</option>
-          ))}
-        </select>
-        <span className="text-muted-foreground text-sm">→</span>
-        <select
-          value={selectedFolderId}
-          onChange={(e) => setSelectedFolderId(e.target.value)}
-          className="rounded-lg border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
-        >
-          {(selectedProduct?.folders ?? []).map((f) => (
-            <option key={f.id} value={f.id}>{f.name}</option>
-          ))}
-        </select>
+      <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+        <div className="flex flex-wrap items-center gap-4">
+          <span className="text-sm font-medium text-muted-foreground">Ingest into:</span>
+          <select
+            value={selectedProductId}
+            onChange={(e) => {
+              setSelectedProductId(e.target.value);
+              const p = products.find((p) => p.id === e.target.value);
+              setSelectedFolderId(p?.folders[0]?.id ?? "");
+              setShowNewFolderInput(false);
+            }}
+            className="rounded-lg border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+          >
+            {products.map((p) => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
+          </select>
+          <span className="text-muted-foreground text-sm">→</span>
+          <select
+            value={showNewFolderInput ? NEW_FOLDER_SENTINEL : selectedFolderId}
+            onChange={(e) => {
+              if (e.target.value === NEW_FOLDER_SENTINEL) {
+                setShowNewFolderInput(true);
+                setNewFolderName("");
+              } else {
+                setSelectedFolderId(e.target.value);
+                setShowNewFolderInput(false);
+              }
+            }}
+            className="rounded-lg border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+          >
+            {(selectedProduct?.folders ?? []).map((f) => (
+              <option key={f.id} value={f.id}>{f.name}</option>
+            ))}
+            <option value={NEW_FOLDER_SENTINEL}>+ New folder…</option>
+          </select>
+        </div>
+
+        {/* New folder input */}
+        {showNewFolderInput && (
+          <div className="flex items-center gap-2 pl-1">
+            <FolderPlus className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+            <input
+              value={newFolderName}
+              onChange={(e) => setNewFolderName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleCreateFolder();
+                if (e.key === "Escape") { setShowNewFolderInput(false); setNewFolderName(""); }
+              }}
+              placeholder="Folder name…"
+              autoFocus
+              className="rounded-lg border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring flex-1 max-w-xs"
+            />
+            <button
+              onClick={handleCreateFolder}
+              disabled={!newFolderName.trim()}
+              className="rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-60"
+            >
+              Create
+            </button>
+            <button
+              onClick={() => { setShowNewFolderInput(false); setNewFolderName(""); }}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="rounded-xl border border-border bg-card p-6">
