@@ -23,9 +23,9 @@ const DEMO_MEMBERS = [
 ];
 
 const ROLE_INFO = {
-  owner: { label: "Owner", color: "text-purple-400 bg-purple-500/10 border-purple-500/15", permissions: ["Full access", "Billing management", "Member management", "Delete workspace"] },
-  admin: { label: "Admin", color: "text-blue-400 bg-blue-500/10 border-blue-500/15", permissions: ["Full access", "Member management", "All publishing"] },
-  editor: { label: "Editor", color: "text-emerald-400 bg-emerald-500/10 border-emerald-500/15", permissions: ["Create & edit content", "Run simulations", "Publish content"] },
+  owner: { label: "Owner", color: "text-primary bg-primary/10 border-primary/15", permissions: ["Full access", "Billing management", "Member management", "Delete workspace"] },
+  admin: { label: "Admin", color: "text-amber-600 bg-amber-500/10 border-amber-500/15", permissions: ["Full access", "Member management", "All publishing"] },
+  editor: { label: "Editor", color: "text-emerald-600 bg-emerald-500/10 border-emerald-500/15", permissions: ["Create & edit content", "Run simulations", "Publish content"] },
   viewer: { label: "Viewer", color: "text-muted-foreground bg-muted/60 border-border/60", permissions: ["View dashboards", "View reports", "No publishing"] },
 };
 
@@ -101,7 +101,7 @@ export default function SettingsPage() {
                   <option>UTC</option><option>America/New_York</option><option>America/Los_Angeles</option><option>Europe/London</option><option>Asia/Tokyo</option>
                 </select>
               </div>
-              <button onClick={() => toast.success("Settings saved!")} className="rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 px-6 py-2.5 text-sm font-bold text-white shadow-md shadow-primary/20">Save Changes</button>
+              <button onClick={() => toast.success("Settings saved!")} className="btn-primary rounded-xl px-6 py-2.5 text-sm font-bold">Save Changes</button>
             </div>
           )}
 
@@ -169,7 +169,7 @@ export default function SettingsPage() {
                     <option value="editor">Editor</option><option value="viewer">Viewer</option><option value="admin">Admin</option>
                   </select>
                   <button disabled={!inviteEmail} onClick={() => { toast.success(`Invitation sent to ${inviteEmail}`); setInviteEmail(""); }}
-                    className="rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 px-5 py-2.5 text-sm font-bold text-white disabled:opacity-60 flex items-center gap-2 shadow-md shadow-primary/20"
+                    className="btn-primary rounded-xl px-5 py-2.5 text-sm font-bold disabled:opacity-60 flex items-center gap-2"
                   >
                     <Plus className="h-4 w-4" /> Invite
                   </button>
@@ -186,7 +186,7 @@ export default function SettingsPage() {
                     const role = ROLE_INFO[member.role as keyof typeof ROLE_INFO];
                     return (
                       <div key={member.id} className="flex items-center gap-3 px-6 py-3.5">
-                        <div className="h-9 w-9 rounded-full bg-gradient-to-br from-primary/20 to-purple-500/10 flex items-center justify-center flex-shrink-0 border border-border/60">
+                        <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 border border-border/60">
                           <span className="text-xs font-bold text-primary">{member.name[0]}</span>
                         </div>
                         <div className="flex-1 min-w-0">
@@ -234,7 +234,7 @@ export default function SettingsPage() {
                     className="flex-1 rounded-xl border border-input bg-background/80 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring/50"
                   />
                   <button disabled={!newKeyName} onClick={() => { toast.success("API key created!"); setNewKeyName(""); }}
-                    className="rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 px-5 py-2.5 text-sm font-bold text-white disabled:opacity-60 flex items-center gap-2 shadow-md shadow-primary/20"
+                    className="btn-primary rounded-xl px-5 py-2.5 text-sm font-bold disabled:opacity-60 flex items-center gap-2"
                   >
                     <Plus className="h-4 w-4" /> Generate
                   </button>
@@ -301,7 +301,7 @@ export default function SettingsPage() {
                   </div>
                 ))}
               </div>
-              <button onClick={() => toast.success("Preferences saved!")} className="rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 px-6 py-2.5 text-sm font-bold text-white shadow-md shadow-primary/20">Save Preferences</button>
+              <button onClick={() => toast.success("Preferences saved!")} className="btn-primary rounded-xl px-6 py-2.5 text-sm font-bold">Save Preferences</button>
             </div>
           )}
         </div>

@@ -21,7 +21,7 @@ const COMPETITOR_DATA: Record<string, Array<{ name: string; share: number; isYou
   ],
 };
 
-const COLORS = ["#6366f1", "#ef4444", "#f97316", "#eab308", "#6b7280"];
+const COLORS = ["hsl(32, 95%, 44%)", "#ef4444", "#f97316", "#eab308", "#6b7280"];
 
 export default function CompetitivePage() {
   const [selectedProduct, setSelectedProduct] = useState(MOCK_PRODUCTS[0].id);
@@ -63,7 +63,7 @@ export default function CompetitivePage() {
           <button onClick={() => setShowAddForm(true)} className="inline-flex items-center gap-2 rounded-xl border border-border/60 px-4 py-2.5 text-sm font-medium hover:bg-accent transition-all">
             <Plus className="h-4 w-4" /> Add Competitor
           </button>
-          <button onClick={handleRunAnalysis} disabled={isAnalyzing} className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 px-5 py-2.5 text-sm font-bold text-white hover:opacity-90 disabled:opacity-60 transition-all shadow-lg shadow-primary/20">
+          <button onClick={handleRunAnalysis} disabled={isAnalyzing} className="btn-primary rounded-xl px-5 py-2.5 text-sm font-bold disabled:opacity-60 transition-all">
             {isAnalyzing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Swords className="h-4 w-4" />}
             {isAnalyzing ? "Analyzing…" : "Run Analysis"}
           </button>
@@ -105,9 +105,9 @@ export default function CompetitivePage() {
           <BarChart data={list} margin={{ top: 0, right: 0, bottom: 0, left: -20 }}>
             <XAxis dataKey="name" tick={{ fontSize: 11, fill: "hsl(215 20.2% 55%)" }} axisLine={false} tickLine={false} />
             <YAxis tick={{ fontSize: 11, fill: "hsl(215 20.2% 55%)" }} axisLine={false} tickLine={false} />
-            <Tooltip formatter={(v: number) => [`${v}%`, "Share of Voice"]} contentStyle={{ background: "hsl(228 14% 7%)", border: "1px solid hsl(217 20% 16%)", borderRadius: "12px", fontSize: "12px" }} />
+            <Tooltip formatter={(v: number) => [`${v}%`, "Share of Voice"]} contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "12px", fontSize: "12px" }} />
             <Bar dataKey="share" radius={[6, 6, 0, 0]}>
-              {list.map((entry, i) => <Cell key={i} fill={entry.isYou ? "#6366f1" : COLORS[Math.min(i, COLORS.length - 1)]} />)}
+              {list.map((entry, i) => <Cell key={i} fill={entry.isYou ? "hsl(32, 95%, 44%)" : COLORS[Math.min(i, COLORS.length - 1)]} />)}
             </Bar>
           </BarChart>
         </ResponsiveContainer>
@@ -120,15 +120,15 @@ export default function CompetitivePage() {
           >
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2.5">
-                <div className="h-3 w-3 rounded-full flex-shrink-0" style={{ background: comp.isYou ? "#6366f1" : COLORS[Math.min(i + 1, COLORS.length - 1)] }} />
+                <div className="h-3 w-3 rounded-full flex-shrink-0" style={{ background: comp.isYou ? "hsl(32, 95%, 44%)" : COLORS[Math.min(i + 1, COLORS.length - 1)] }} />
                 <span className="font-bold text-sm">{comp.name}</span>
-                {comp.isYou && <span className="text-[10px] bg-primary/15 text-primary px-2 py-0.5 rounded-full font-bold border border-primary/20">YOU</span>}
+                {comp.isYou && <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold border border-primary/20">YOU</span>}
               </div>
               <span className="text-lg font-black tabular-nums">{comp.share}%</span>
             </div>
             <div className="h-2 bg-muted/60 rounded-full mb-4 overflow-hidden">
               <motion.div className="h-full rounded-full" initial={{ width: 0 }} animate={{ width: `${comp.share}%` }} transition={{ duration: 0.8, delay: 0.2 + i * 0.1 }}
-                style={{ background: comp.isYou ? "#6366f1" : COLORS[Math.min(i + 1, COLORS.length - 1)], boxShadow: `0 0 8px ${comp.isYou ? "rgb(99 102 241 / 0.3)" : "transparent"}` }}
+                style={{ background: comp.isYou ? "hsl(32, 95%, 44%)" : COLORS[Math.min(i + 1, COLORS.length - 1)], boxShadow: `0 0 8px ${comp.isYou ? "hsl(32 95% 44% / 0.3)" : "transparent"}` }}
               />
             </div>
             {comp.strengths.length > 0 && (
@@ -165,7 +165,7 @@ export default function CompetitivePage() {
                 className="w-full rounded-xl border border-input bg-background/80 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring/50 mb-5"
               />
               <div className="flex gap-2">
-                <button onClick={handleAddCompetitor} disabled={!newName.trim()} className="flex-1 rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 px-4 py-2.5 text-sm font-bold text-white hover:opacity-90 disabled:opacity-50 transition-all shadow-md shadow-primary/20">Add Competitor</button>
+                <button onClick={handleAddCompetitor} disabled={!newName.trim()} className="flex-1 btn-primary rounded-xl px-4 py-2.5 text-sm font-bold disabled:opacity-50 transition-all">Add Competitor</button>
                 <button onClick={() => setShowAddForm(false)} className="rounded-xl border border-border px-4 py-2.5 text-sm hover:bg-accent transition-colors">Cancel</button>
               </div>
             </motion.div>

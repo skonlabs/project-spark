@@ -29,8 +29,8 @@ interface ScheduledPost {
 
 const PLATFORM_LOGOS: Record<string, string> = { wordpress: "WP", webflow: "WF", ghost: "GH", contentful: "CF", notion: "NT", github: "GH" };
 const PLATFORM_COLORS: Record<string, string> = {
-  wordpress: "bg-blue-500/20 text-blue-400", webflow: "bg-purple-500/20 text-purple-400", ghost: "bg-yellow-500/20 text-yellow-400",
-  contentful: "bg-cyan-500/20 text-cyan-400", notion: "bg-muted text-muted-foreground", github: "bg-gray-500/20 text-gray-400",
+  wordpress: "bg-amber-500/15 text-amber-600", webflow: "bg-primary/15 text-primary", ghost: "bg-yellow-500/15 text-yellow-600",
+  contentful: "bg-teal-500/15 text-teal-600", notion: "bg-muted text-muted-foreground", github: "bg-muted text-muted-foreground",
 };
 
 const INITIAL_CONNECTORS: Connector[] = [

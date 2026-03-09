@@ -80,14 +80,14 @@ const DEMO_SUGGESTIONS: AgentSuggestion[] = [
 ];
 
 const typeConfig: Record<SuggestionType, { icon: React.ReactNode; label: string; color: string }> = {
-  content: { icon: <FileText className="h-4 w-4" />, label: "Content Gap", color: "text-blue-400 bg-blue-500/10" },
-  optimization: { icon: <TrendingUp className="h-4 w-4" />, label: "Optimization", color: "text-green-400 bg-green-500/10" },
-  competitive: { icon: <Swords className="h-4 w-4" />, label: "Competitive Alert", color: "text-orange-400 bg-orange-500/10" },
-  monitoring: { icon: <Brain className="h-4 w-4" />, label: "Monitoring", color: "text-purple-400 bg-purple-500/10" },
+  content: { icon: <FileText className="h-4 w-4" />, label: "Content Gap", color: "text-amber-600 bg-amber-500/10" },
+  optimization: { icon: <TrendingUp className="h-4 w-4" />, label: "Optimization", color: "text-emerald-600 bg-emerald-500/10" },
+  competitive: { icon: <Swords className="h-4 w-4" />, label: "Competitive Alert", color: "text-orange-600 bg-orange-500/10" },
+  monitoring: { icon: <Brain className="h-4 w-4" />, label: "Monitoring", color: "text-primary bg-primary/10" },
 };
 
-const impactColor: Record<string, string> = { high: "text-red-400", medium: "text-yellow-400", low: "text-green-400" };
-const effortColor: Record<string, string> = { low: "text-green-400", medium: "text-yellow-400", high: "text-red-400" };
+const impactColor: Record<string, string> = { high: "text-red-500", medium: "text-amber-500", low: "text-emerald-500" };
+const effortColor: Record<string, string> = { low: "text-emerald-500", medium: "text-amber-500", high: "text-red-500" };
 
 const AGENT_STATS = [
   { label: "Suggestions Generated", value: "47", sub: "last 30 days", icon: <Lightbulb className="h-4 w-4" /> },
@@ -136,11 +136,11 @@ export default function AgentPage() {
             <span className="text-muted-foreground">Agent</span>
             <button
               onClick={() => { setAgentEnabled(!agentEnabled); toast.success(agentEnabled ? "Agent paused" : "Agent resumed"); }}
-              className={`relative inline-flex h-5 w-9 flex-shrink-0 rounded-full transition-colors ${agentEnabled ? "bg-green-500" : "bg-muted"}`}
+              className={`relative inline-flex h-5 w-9 flex-shrink-0 rounded-full transition-colors ${agentEnabled ? "bg-emerald-500" : "bg-muted"}`}
             >
               <span className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform mt-0.5 ${agentEnabled ? "translate-x-4" : "translate-x-0.5"}`} />
             </button>
-            <span className={`text-xs ${agentEnabled ? "text-green-400" : "text-muted-foreground"}`}>
+            <span className={`text-xs ${agentEnabled ? "text-emerald-600" : "text-muted-foreground"}`}>
               {agentEnabled ? "Active" : "Paused"}
             </span>
           </div>
@@ -153,9 +153,9 @@ export default function AgentPage() {
       </div>
 
       {agentEnabled && (
-        <div className="rounded-xl border border-green-500/30 bg-green-500/5 px-5 py-3 flex items-center gap-3">
-          <div className="h-2 w-2 rounded-full bg-green-400 animate-pulse" />
-          <p className="text-sm text-green-400 font-medium">Agent is active</p>
+        <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 px-5 py-3 flex items-center gap-3">
+          <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+          <p className="text-sm text-emerald-600 font-medium">Agent is active</p>
           <p className="text-sm text-muted-foreground">— Scanning AI answers daily at 9am · Monitoring 5 competitor brands · Tracking 23 prompts across 6 LLMs</p>
         </div>
       )}
@@ -211,8 +211,8 @@ export default function AgentPage() {
                     <span className={`text-xs font-medium ${impactColor[suggestion.impact]}`}>{suggestion.impact} impact</span>
                     <span className="text-xs text-muted-foreground">·</span>
                     <span className={`text-xs ${effortColor[suggestion.effort]}`}>{suggestion.effort} effort</span>
-                    {suggestion.status === "completed" && <CheckCircle2 className="h-3.5 w-3.5 text-green-400" />}
-                    {suggestion.status === "in_progress" && <Clock className="h-3.5 w-3.5 text-yellow-400 animate-pulse" />}
+                    {suggestion.status === "completed" && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />}
+                    {suggestion.status === "in_progress" && <Clock className="h-3.5 w-3.5 text-amber-500 animate-pulse" />}
                   </div>
                   <p className="font-medium text-sm">{suggestion.title}</p>
                 </div>
@@ -231,7 +231,7 @@ export default function AgentPage() {
                     )}
                     {suggestion.status === "in_progress" && (
                       <button onClick={() => markComplete(suggestion.id)}
-                        className="rounded-lg bg-green-600 px-3 py-1.5 text-xs font-medium text-white flex items-center gap-1">
+                        className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white flex items-center gap-1">
                         <CheckCircle2 className="h-3 w-3" /> Mark Complete
                       </button>
                     )}

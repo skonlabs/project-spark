@@ -71,7 +71,7 @@ export default function Landing() {
       {/* ─── Hero ─────────────────────────────────────────── */}
       <section className="relative pt-20 pb-4 px-6 overflow-hidden">
         {/* Subtle radial glow */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] opacity-[0.07] pointer-events-none" style={{ background: "radial-gradient(ellipse, hsl(240 87% 72%), transparent 70%)" }} />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] opacity-[0.07] pointer-events-none" style={{ background: "radial-gradient(ellipse, hsl(32 95% 55%), transparent 70%)" }} />
 
         <div className="mx-auto max-w-[1200px] relative">
           <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="max-w-[640px]">
