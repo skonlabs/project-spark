@@ -138,6 +138,7 @@ export function ContentProvider({ children }: { children: ReactNode }) {
     []
   );
 
+  const addContentItem = useCallback(
     ({
       productId,
       folderId,
