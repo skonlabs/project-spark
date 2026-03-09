@@ -667,7 +667,7 @@ export default function ContentPage() {
             </div>
             
             <div className="flex gap-2 mt-5">
-              <button onClick={handleCreateFolder} disabled={!newFolderName.trim()} className="flex-1 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground disabled:opacity-60">
+              <button onClick={handleCreateFolder} disabled={!newFolderName.trim() || !newFolderProductId} className="flex-1 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground disabled:opacity-60">
                 Create Folder
               </button>
               <button onClick={() => setShowCreateFolder(false)} className="rounded-lg border border-border bg-background px-4 py-2.5 text-sm font-medium hover:bg-accent transition-colors">
