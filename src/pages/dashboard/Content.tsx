@@ -75,6 +75,7 @@ export default function ContentPage() {
 
   // Ingest state
   const [showIngest, setShowIngest] = useState(false);
+  const [isIngesting, setIsIngesting] = useState(false);
   const [activeTab, setActiveTab] = useState<IngestTab>("upload");
   const [urlInput, setUrlInput] = useState("");
   const [crawlUrl, setCrawlUrl] = useState("");
