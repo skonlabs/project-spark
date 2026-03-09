@@ -136,7 +136,7 @@ export default function AgentPage() {
             <span className="text-muted-foreground">Agent</span>
             <button
               onClick={() => { setAgentEnabled(!agentEnabled); toast.success(agentEnabled ? "Agent paused" : "Agent resumed"); }}
-              className={`relative inline-flex h-5 w-9 flex-shrink-0 rounded-full transition-colors ${agentEnabled ? "bg-green-500" : "bg-muted"}`}
+              className={`relative inline-flex h-5 w-9 flex-shrink-0 rounded-full transition-colors ${agentEnabled ? "bg-emerald-500" : "bg-muted"}`}
             >
               <span className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform mt-0.5 ${agentEnabled ? "translate-x-4" : "translate-x-0.5"}`} />
             </button>
