@@ -192,6 +192,7 @@ export function ContentProvider({ children }: { children: ReactNode }) {
       `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
       `https://corsproxy.io/?${encodeURIComponent(url)}`,
     ];
+
     for (const proxyUrl of proxies) {
       try {
         const controller = new AbortController();
@@ -199,63 +200,44 @@ export function ContentProvider({ children }: { children: ReactNode }) {
         const response = await fetch(proxyUrl, { signal: controller.signal });
         clearTimeout(timeout);
         if (!response.ok) continue;
-      
-      const html = await response.text();
-      
-      // Basic HTML to text conversion
-      const doc = new DOMParser().parseFromString(html, "text/html");
-      
-      // Remove script, style, nav, footer, header elements
-      const elementsToRemove = doc.querySelectorAll("script, style, nav, footer, header, aside, .sidebar, .navigation, .menu, .ad, .advertisement");
-      elementsToRemove.forEach((el) => el.remove());
-      
-      // Get main content area if available
-      const mainContent = doc.querySelector("main, article, .content, .post, .entry-content, #content");
-      const contentEl = mainContent || doc.body;
-      
-      // Extract text with basic formatting
-      let content = "";
-      
-      // Get title
-      const pageTitle = doc.querySelector("h1")?.textContent?.trim() || doc.title || url;
-      content += `# ${pageTitle}\n\n`;
-      
-      // Get meta description if available
-      const metaDesc = doc.querySelector('meta[name="description"]')?.getAttribute("content");
-      if (metaDesc) {
-        content += `> ${metaDesc}\n\n`;
+
+        const html = await response.text();
+        const doc = new DOMParser().parseFromString(html, "text/html");
+
+        // Remove non-content elements
+        doc.querySelectorAll("script, style, nav, footer, header, aside, .sidebar, .navigation, .menu, .ad, .advertisement")
+          .forEach((el) => el.remove());
+
+        const contentEl = doc.querySelector("main, article, .content, .post, .entry-content, #content") || doc.body;
+        const pageTitle = doc.querySelector("h1")?.textContent?.trim() || doc.title || url;
+        let content = `# ${pageTitle}\n\n`;
+
+        const metaDesc = doc.querySelector('meta[name="description"]')?.getAttribute("content");
+        if (metaDesc) content += `> ${metaDesc}\n\n`;
+
+        contentEl.querySelectorAll("h1, h2, h3, h4, h5, h6, p, li, blockquote").forEach((el) => {
+          const tag = el.tagName.toLowerCase();
+          const text = el.textContent?.trim();
+          if (!text || text.length < 3) return;
+          if (tag === "h1") content += `# ${text}\n\n`;
+          else if (tag === "h2") content += `## ${text}\n\n`;
+          else if (tag === "h3") content += `### ${text}\n\n`;
+          else if (tag.startsWith("h")) content += `#### ${text}\n\n`;
+          else if (tag === "li") content += `- ${text}\n`;
+          else if (tag === "blockquote") content += `> ${text}\n\n`;
+          else content += `${text}\n\n`;
+        });
+
+        content = content.replace(/\n{3,}/g, "\n\n").trim();
+        if (content.length < 100) {
+          content = `# ${pageTitle}\n\n${contentEl.textContent?.replace(/\s+/g, " ").trim() || "Content could not be extracted."}`;
+        }
+        return content;
+      } catch {
+        continue;
       }
-      
-      // Extract headings and paragraphs
-      const elements = contentEl.querySelectorAll("h1, h2, h3, h4, h5, h6, p, li, blockquote");
-      elements.forEach((el) => {
-        const tag = el.tagName.toLowerCase();
-        const text = el.textContent?.trim();
-        if (!text || text.length < 3) return;
-        
-        if (tag === "h1") content += `# ${text}\n\n`;
-        else if (tag === "h2") content += `## ${text}\n\n`;
-        else if (tag === "h3") content += `### ${text}\n\n`;
-        else if (tag === "h4") content += `#### ${text}\n\n`;
-        else if (tag === "h5" || tag === "h6") content += `##### ${text}\n\n`;
-        else if (tag === "li") content += `- ${text}\n`;
-        else if (tag === "blockquote") content += `> ${text}\n\n`;
-        else content += `${text}\n\n`;
-      });
-      
-      // Clean up multiple newlines
-      content = content.replace(/\n{3,}/g, "\n\n").trim();
-      
-      if (content.length < 100) {
-        // Fallback to body text if extraction didn't work well
-        content = `# ${pageTitle}\n\n${contentEl.textContent?.replace(/\s+/g, " ").trim() || "Content could not be extracted."}`;
-      }
-      
-      return content;
-    } catch (error) {
-      console.error("Error fetching URL content:", error);
-      return `# Content from ${url}\n\nUnable to fetch content automatically due to network restrictions.\n\nPlease copy and paste the content manually.`;
     }
+    return null;
   }
 
   const updateItemStatus = useCallback(
