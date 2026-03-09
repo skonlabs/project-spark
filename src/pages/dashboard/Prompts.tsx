@@ -3,13 +3,11 @@ import { Link } from "react-router-dom";
 import {
   Search, Sparkles, TrendingUp, HelpCircle, Swords, BookOpen,
   Hash, Wrench, Plus, Play, ChevronRight, BarChart2, Loader2, CheckCircle2,
-  ArrowRight, Brain, Zap,
+  ArrowRight, Brain, Zap, Edit, Trash2, X,
 } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
-import {
-  type LLMIntentType, type ProductPrompt,
-} from "@/data/products";
+import { type LLMIntentType, type ProductPrompt } from "@/data/products";
 import { useContent } from "@/contexts/ContentContext";
 
 interface IntentMeta {
@@ -25,30 +23,32 @@ const INTENT_META: IntentMeta[] = [
   { id: "troubleshoot", label: "Troubleshoot / Fix", desc: "User diagnosing a problem or seeking a fix", icon: <Wrench className="h-4 w-4" />, color: "text-rose-400", gradient: "from-rose-500 to-red-500", example: '"Why is my LLM giving wrong answers?"' },
 ];
 
-const PRODUCT_ID = "product-gaeo";
-
 const DISCOVERED_PROMPTS: Array<{ text: string; intent: LLMIntentType }> = [
-  { text: "What tools help monitor LLM outputs in production?",        intent: "find_best" },
-  { text: "How do I track which prompts my users are sending to AI?",  intent: "learn_howto" },
-  { text: "Best AI observability platform for enterprise teams",        intent: "find_best" },
-  { text: "What is prompt drift and how do I detect it?",              intent: "seek_explanation" },
-  { text: "GAEO vs Arize AI — which is better for LLM monitoring?",   intent: "compare" },
-  { text: "Open-source alternatives to GAEO for AI observability",     intent: "find_alternative" },
-  { text: "Why are my LLM responses getting worse over time?",         intent: "troubleshoot" },
-  { text: "How to set up automated regression testing for LLMs",       intent: "learn_howto" },
-  { text: "What metrics should I track for production LLM apps?",      intent: "seek_explanation" },
-  { text: "Cheapest LLM observability tool with good dashboards",      intent: "find_best" },
+  { text: "What tools help monitor LLM outputs in production?", intent: "find_best" },
+  { text: "How do I track which prompts my users are sending to AI?", intent: "learn_howto" },
+  { text: "Best AI observability platform for enterprise teams", intent: "find_best" },
+  { text: "What is prompt drift and how do I detect it?", intent: "seek_explanation" },
+  { text: "GAEO vs Arize AI — which is better for LLM monitoring?", intent: "compare" },
+  { text: "Open-source alternatives to GAEO for AI observability", intent: "find_alternative" },
+  { text: "Why are my LLM responses getting worse over time?", intent: "troubleshoot" },
+  { text: "How to set up automated regression testing for LLMs", intent: "learn_howto" },
+  { text: "What metrics should I track for production LLM apps?", intent: "seek_explanation" },
+  { text: "Cheapest LLM observability tool with good dashboards", intent: "find_best" },
 ];
 
 export default function PromptsPage() {
   const { products, getProductPrompts, addPromptsToProduct } = useContent();
 
   const [selectedProductId, setSelectedProductId] = useState(() => products[0]?.id ?? "");
+  const [selectedContentId, setSelectedContentId] = useState<string>("");
   const [selectedIntent, setSelectedIntent] = useState<LLMIntentType>("seek_explanation");
   const [isDiscovering, setIsDiscovering] = useState(false);
   const [customPrompt, setCustomPrompt] = useState("");
   const [, forceUpdate] = useState(0);
-  const allPrompts: ProductPrompt[] = getProductPrompts(PRODUCT_ID);
+
+  const selectedProduct = products.find((p) => p.id === selectedProductId);
+  const allContent = selectedProduct?.folders.flatMap((f) => f.items) ?? [];
+  const allPrompts: ProductPrompt[] = getProductPrompts(selectedProductId);
 
   const activeIntentMeta = INTENT_META.find((m) => m.id === selectedIntent)!;
   const intentPrompts = allPrompts.filter((p) => p.intent === selectedIntent);
@@ -59,7 +59,7 @@ export default function PromptsPage() {
   function handleDiscover() {
     setIsDiscovering(true);
     setTimeout(() => {
-      addPromptsToProduct(PRODUCT_ID, DISCOVERED_PROMPTS.map(p => ({ ...p, covered: false })));
+      addPromptsToProduct(selectedProductId, DISCOVERED_PROMPTS.map((p) => ({ ...p, covered: false })));
       setIsDiscovering(false);
       forceUpdate((n) => n + 1);
       toast.success(`${DISCOVERED_PROMPTS.length} new prompts discovered!`);
@@ -68,25 +68,72 @@ export default function PromptsPage() {
 
   function handleAddCustomPrompt() {
     if (!customPrompt.trim()) return;
-    addPromptsToProduct(PRODUCT_ID, [{ text: customPrompt.trim(), intent: selectedIntent, covered: false }]);
+    addPromptsToProduct(selectedProductId, [{ text: customPrompt.trim(), intent: selectedIntent, covered: false }]);
     toast.success("Prompt added");
-    setCustomPrompt(""); forceUpdate((n) => n + 1);
+    setCustomPrompt("");
+    forceUpdate((n) => n + 1);
   }
 
-  const selectedProduct = products.find((p) => p.id === selectedProductId);
+  function handleGenerateForContent() {
+    if (!selectedContentId) { toast.error("Select a content item first"); return; }
+    setIsDiscovering(true);
+    const content = allContent.find((c) => c.id === selectedContentId);
+    setTimeout(() => {
+      const generated = [
+        { text: `What is ${content?.title?.toLowerCase() || "this"}?`, intent: "seek_explanation" as LLMIntentType, covered: true },
+        { text: `Best tools for ${content?.title?.toLowerCase() || "this topic"}`, intent: "find_best" as LLMIntentType, covered: false },
+        { text: `How to implement ${content?.title?.toLowerCase() || "this"}?`, intent: "learn_howto" as LLMIntentType, covered: false },
+      ];
+      addPromptsToProduct(selectedProductId, generated);
+      setIsDiscovering(false);
+      forceUpdate((n) => n + 1);
+      toast.success(`3 prompts generated for "${content?.title}"!`);
+    }, 1500);
+  }
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-heading font-bold tracking-tight">Prompt Engine</h1>
-          <p className="text-muted-foreground text-sm mt-0.5">Manage prompts users ask AI systems — by interaction intent</p>
+          <h1 className="text-2xl font-heading font-bold tracking-tight">Prompt Manager</h1>
+          <p className="text-muted-foreground text-sm mt-0.5">Manage prompts per product and content — discover, add, and generate</p>
         </div>
         <button onClick={handleDiscover} disabled={isDiscovering} className="btn-primary text-xs px-4 py-2">
           {isDiscovering ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
           {isDiscovering ? "Discovering..." : "Discover Prompts"}
         </button>
       </motion.div>
+
+      {/* Product & Content Selector */}
+      <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+        <div className="flex items-center gap-3 flex-wrap">
+          <span className="text-xs font-medium text-muted-foreground">Product:</span>
+          {products.map((p) => (
+            <button key={p.id} onClick={() => { setSelectedProductId(p.id); setSelectedContentId(""); }}
+              className={`rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors ${
+                selectedProductId === p.id ? "border-primary/50 bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary/30"
+              }`}>
+              {p.name}
+            </button>
+          ))}
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-xs font-medium text-muted-foreground">Content (optional):</span>
+          <select value={selectedContentId} onChange={(e) => setSelectedContentId(e.target.value)}
+            className="rounded-lg border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring max-w-sm">
+            <option value="">All content</option>
+            {allContent.filter((c) => c.status === "analyzed").map((c) => (
+              <option key={c.id} value={c.id}>{c.title}</option>
+            ))}
+          </select>
+          {selectedContentId && (
+            <button onClick={handleGenerateForContent} disabled={isDiscovering}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/20 transition-colors">
+              <Zap className="h-3 w-3" /> Generate prompts for this content
+            </button>
+          )}
+        </div>
+      </div>
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3">
@@ -96,8 +143,7 @@ export default function PromptsPage() {
           { value: totalPrompts - coveredPrompts, label: "Gaps", gradient: "from-rose-500/10 to-red-500/5" },
         ].map((stat, i) => (
           <motion.div key={stat.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
-            className={`bento-card text-center bg-gradient-to-br ${stat.gradient}`}
-          >
+            className={`bento-card text-center bg-gradient-to-br ${stat.gradient}`}>
             <p className="text-3xl font-heading font-black tabular-nums">{stat.value}</p>
             <p className="text-[10px] text-muted-foreground mt-1 font-medium uppercase tracking-wider">{stat.label}</p>
           </motion.div>
@@ -108,23 +154,11 @@ export default function PromptsPage() {
       <div className="rounded-xl border border-border bg-card/50 p-4 flex flex-wrap items-center gap-3">
         <span className="text-xs font-medium text-muted-foreground">Use prompts in:</span>
         <Link to="/dashboard/simulation" className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium hover:bg-accent/40 hover:border-primary/30 transition-colors">
-          <Brain className="h-3 w-3 text-primary" /> Simulation Engine
-          <ArrowRight className="h-2.5 w-2.5 text-muted-foreground" />
+          <Brain className="h-3 w-3 text-primary" /> Simulation Engine <ArrowRight className="h-2.5 w-2.5 text-muted-foreground" />
         </Link>
         <Link to="/dashboard/competitive" className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium hover:bg-accent/40 hover:border-primary/30 transition-colors">
-          <Swords className="h-3 w-3 text-primary" /> Competitive Analysis
-          <ArrowRight className="h-2.5 w-2.5 text-muted-foreground" />
+          <Swords className="h-3 w-3 text-primary" /> Competitive Analysis <ArrowRight className="h-2.5 w-2.5 text-muted-foreground" />
         </Link>
-        <Link to="/dashboard/content/generate" className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium hover:bg-accent/40 hover:border-primary/30 transition-colors">
-          <Zap className="h-3 w-3 text-primary" /> Generate Content
-          <ArrowRight className="h-2.5 w-2.5 text-muted-foreground" />
-        </Link>
-        {gapPrompts.length > 0 && (
-          <Link to="/dashboard/analysis" className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium hover:bg-accent/40 hover:border-primary/30 transition-colors">
-            <BarChart2 className="h-3 w-3 text-primary" /> Gap Analysis
-            <span className="text-[10px] text-red-400 ml-1">{gapPrompts.length} gaps</span>
-          </Link>
-        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -138,18 +172,15 @@ export default function PromptsPage() {
               <button key={meta.id} onClick={() => setSelectedIntent(meta.id)}
                 className={`w-full flex items-center gap-3 rounded-xl border p-3.5 text-left transition-all ${
                   selectedIntent === meta.id ? "border-primary/25 bg-primary/5" : "border-border/30 hover:border-primary/15 bg-card/50"
-                }`}
-              >
-                <div className={`h-8 w-8 rounded-lg bg-gradient-to-br ${meta.gradient} flex items-center justify-center text-white flex-shrink-0`}>
-                  {meta.icon}
-                </div>
+                }`}>
+                <div className={`h-8 w-8 rounded-lg bg-gradient-to-br ${meta.gradient} flex items-center justify-center text-white flex-shrink-0`}>{meta.icon}</div>
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-xs">{meta.label}</p>
                   <p className="text-[10px] text-muted-foreground tabular-nums font-mono">{count} · {covered} covered</p>
                 </div>
                 {count > 0 && (
                   <div className="h-1 w-10 rounded-full bg-border/50 overflow-hidden">
-                    <div className="h-full bg-emerald-400 rounded-full" style={{ width: `${count > 0 ? (covered / count) * 100 : 0}%` }} />
+                    <div className="h-full bg-emerald-400 rounded-full" style={{ width: `${(covered / count) * 100}%` }} />
                   </div>
                 )}
               </button>
@@ -160,9 +191,7 @@ export default function PromptsPage() {
         {/* Prompt list */}
         <div className="lg:col-span-2 section-card">
           <div className="flex items-center gap-3 px-6 py-4 border-b border-border/30">
-            <div className={`h-8 w-8 rounded-lg bg-gradient-to-br ${activeIntentMeta.gradient} flex items-center justify-center text-white flex-shrink-0`}>
-              {activeIntentMeta.icon}
-            </div>
+            <div className={`h-8 w-8 rounded-lg bg-gradient-to-br ${activeIntentMeta.gradient} flex items-center justify-center text-white flex-shrink-0`}>{activeIntentMeta.icon}</div>
             <div>
               <h2 className="font-heading font-bold text-sm">{activeIntentMeta.label}</h2>
               <p className="text-[10px] text-muted-foreground">{activeIntentMeta.desc}</p>
@@ -184,6 +213,7 @@ export default function PromptsPage() {
                 <div key={prompt.id} className="flex items-center gap-3 px-6 py-3 hover:bg-accent/15 transition-colors">
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-medium">{prompt.text}</p>
+                    <p className="text-[9px] text-muted-foreground/50 mt-0.5">Added {new Date(prompt.addedAt).toLocaleDateString("en", { month: "short", day: "numeric" })}</p>
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
                     {prompt.covered ? (
@@ -193,19 +223,13 @@ export default function PromptsPage() {
                     ) : (
                       <span className="text-[10px] bg-red-500/10 text-red-400 border border-red-500/15 px-2 py-0.5 rounded-full font-medium">Gap</span>
                     )}
-                    <Link
-                      to={`/dashboard/simulation?prompt=${encodeURIComponent(prompt.text)}`}
-                      className="rounded-lg border border-border/30 p-1.5 text-muted-foreground/50 hover:text-foreground hover:bg-accent/30 transition-all"
-                      title="Simulate this prompt"
-                    >
+                    <Link to={`/dashboard/simulation?prompt=${encodeURIComponent(prompt.text)}`}
+                      className="rounded-lg border border-border/30 p-1.5 text-muted-foreground/50 hover:text-foreground hover:bg-accent/30 transition-all" title="Simulate">
                       <Play className="h-2.5 w-2.5" />
                     </Link>
                     {!prompt.covered && (
-                      <Link
-                        to={`/dashboard/content/generate?topic=${encodeURIComponent(prompt.text)}`}
-                        className="rounded-lg border border-border/30 p-1.5 text-muted-foreground/50 hover:text-primary hover:bg-primary/10 transition-all"
-                        title="Generate content for this prompt"
-                      >
+                      <Link to={`/dashboard/content/generate?topic=${encodeURIComponent(prompt.text)}`}
+                        className="rounded-lg border border-border/30 p-1.5 text-muted-foreground/50 hover:text-primary hover:bg-primary/10 transition-all" title="Generate content">
                         <Zap className="h-2.5 w-2.5" />
                       </Link>
                     )}
@@ -217,12 +241,9 @@ export default function PromptsPage() {
 
           <div className="px-6 py-3.5 border-t border-border/30 flex items-center gap-2">
             <input value={customPrompt} onChange={(e) => setCustomPrompt(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleAddCustomPrompt()}
-              placeholder={`Add "${activeIntentMeta.label}" prompt…`}
-              className="input-field flex-1"
-            />
+              placeholder={`Add "${activeIntentMeta.label}" prompt…`} className="input-field flex-1" />
             <button onClick={handleAddCustomPrompt} disabled={!customPrompt.trim()}
-              className="rounded-xl border border-border/30 px-3 py-2.5 hover:bg-accent/30 disabled:opacity-40 transition-all"
-            >
+              className="rounded-xl border border-border/30 px-3 py-2.5 hover:bg-accent/30 disabled:opacity-40 transition-all">
               <Plus className="h-3.5 w-3.5" />
             </button>
           </div>

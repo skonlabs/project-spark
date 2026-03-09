@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
-  BarChart2, Bot, ChevronDown, ChevronRight, File, Folder, FolderOpen,
-  Globe, LayoutDashboard, LineChart, LogOut, Menu, MessageSquare,
-  Package2, Plus, Send, Settings, Swords, Upload, User, X, Zap,
+  BarChart2, Bot, Globe, LayoutDashboard, LineChart, LogOut, Menu,
+  MessageSquare, Package2, Send, Settings, Swords, Upload, User, X, Zap,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
@@ -18,9 +17,6 @@ export default function DashboardLayout() {
   const [user, setUser] = useState<{ full_name: string; email: string } | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
-  const [expandedProducts, setExpandedProducts] = useState<Set<string>>(new Set(["product-gaeo"]));
-  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set(["folder-blog", "folder-docs", "folder-landing"]));
-
   const [showIngest, setShowIngest] = useState(false);
   const [ingestTarget, setIngestTarget] = useState<{ productId: string; folderId: string; productName: string; folderName: string } | null>(null);
   const [ingestMethod, setIngestMethod] = useState<IngestMethod>("url");
@@ -33,16 +29,6 @@ export default function DashboardLayout() {
     setUser(JSON.parse(userData));
   }, [navigate]);
 
-  function toggleProduct(id: string) {
-    setExpandedProducts((prev) => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; });
-  }
-  function toggleFolder(id: string) {
-    setExpandedFolders((prev) => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; });
-  }
-  function openIngest(productId: string, folderId: string, productName: string, folderName: string) {
-    setIngestTarget({ productId, folderId, productName, folderName });
-    setIngestUrl(""); setIngestMethod("url"); setShowIngest(true);
-  }
   function handleIngest() {
     if (!ingestTarget || (!ingestUrl && ingestMethod === "url")) return;
     setIngestLoading(true);
@@ -59,15 +45,7 @@ export default function DashboardLayout() {
   }
   function handleLogout() { localStorage.clear(); navigate("/auth/login"); }
 
-  const isContentSelected = (id: string) => location.pathname === `/dashboard/content/${id}`;
   const isRouteActive = (path: string) => location.pathname === path || location.pathname.startsWith(path + "/");
-
-  function scoreColor(score: number | null) {
-    if (score === null) return "text-muted-foreground";
-    if (score >= 65) return "text-emerald-400";
-    if (score >= 45) return "text-yellow-400";
-    return "text-red-400";
-  }
 
   const navSections = [
     {
@@ -76,7 +54,6 @@ export default function DashboardLayout() {
         { to: "/dashboard", icon: LayoutDashboard, label: "Home", exact: true },
         { to: "/dashboard/content", icon: Upload, label: "Content Library" },
         { to: "/dashboard/analysis", icon: BarChart2, label: "Gap Analysis" },
-        { to: "/dashboard/content/generate", icon: Zap, label: "Generate Queue" },
         { to: "/dashboard/publish", icon: Send, label: "Publish" },
       ],
     },
@@ -138,79 +115,6 @@ export default function DashboardLayout() {
               </div>
             </div>
           ))}
-
-          {/* Explorer */}
-          <div>
-            <div className="flex items-center justify-between px-2.5 mb-1.5">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/40">Explorer</p>
-              <button onClick={() => toast.success("Add product — coming soon!")} className="text-muted-foreground/30 hover:text-foreground transition-colors">
-                <Plus className="h-3 w-3" />
-              </button>
-            </div>
-            {products.map((product) => {
-              const isExpanded = expandedProducts.has(product.id);
-              const allItems = product.folders.flatMap((f) => f.items);
-              const analyzedCount = allItems.filter((i) => i.status === "analyzed").length;
-              return (
-                <div key={product.id}>
-                  <div className="flex items-center">
-                    <button onClick={() => toggleProduct(product.id)} className="p-1 text-muted-foreground/30 hover:text-foreground flex-shrink-0">
-                      {isExpanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-                    </button>
-                    <Link to="/dashboard" className="flex items-center gap-1.5 flex-1 px-1 py-1 rounded-md hover:bg-accent/30 transition-colors text-[13px] font-medium truncate text-muted-foreground/70 hover:text-foreground">
-                      <Package2 className="h-3 w-3 text-primary flex-shrink-0" />
-                      <span className="truncate">{product.name}</span>
-                      <span className="ml-auto text-[9px] text-muted-foreground/30 font-mono">{analyzedCount}/{allItems.length}</span>
-                    </Link>
-                  </div>
-                  {isExpanded && (
-                    <div className="ml-4">
-                      {product.folders.map((folder) => {
-                        const isFolderOpen = expandedFolders.has(folder.id);
-                        return (
-                          <div key={folder.id}>
-                            <button onClick={() => toggleFolder(folder.id)} className="flex items-center gap-1.5 w-full px-1.5 py-1 rounded-md hover:bg-accent/30 transition-colors text-[12px] text-left text-muted-foreground/60">
-                              {isFolderOpen ? <ChevronDown className="h-2.5 w-2.5 flex-shrink-0" /> : <ChevronRight className="h-2.5 w-2.5 flex-shrink-0" />}
-                              {isFolderOpen ? <FolderOpen className="h-3 w-3 flex-shrink-0" /> : <Folder className="h-3 w-3 flex-shrink-0" />}
-                              <span className="truncate">{folder.name}</span>
-                              <span className="ml-auto text-[9px] text-muted-foreground/20 font-mono">{folder.items.length}</span>
-                            </button>
-                            {isFolderOpen && (
-                              <div className="ml-3.5">
-                                {folder.items.map((item) => {
-                                  const selected = isContentSelected(item.id);
-                                  return (
-                                    <Link key={item.id} to={`/dashboard/content/${item.id}`}
-                                      className={`flex items-center gap-1.5 px-1.5 py-0.5 rounded-md text-[11px] transition-all ${
-                                        selected ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground/50 hover:text-foreground hover:bg-accent/20"
-                                      }`}
-                                    >
-                                      <File className="h-2.5 w-2.5 flex-shrink-0" />
-                                      <span className="truncate flex-1">{item.title}</span>
-                                      {item.status === "processing" ? (
-                                        <span className="text-[8px] text-warning animate-pulse">●</span>
-                                      ) : item.score !== null ? (
-                                        <span className={`text-[9px] font-bold tabular-nums font-mono ${scoreColor(item.score)}`}>{item.score}</span>
-                                      ) : null}
-                                    </Link>
-                                  );
-                                })}
-                                <Link to={`/dashboard/content?product=${product.id}&folder=${folder.id}`}
-                                  className="flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] text-muted-foreground/20 hover:text-muted-foreground hover:bg-accent/20 transition-colors w-full mt-0.5"
-                                >
-                                  <Plus className="h-2 w-2" /> Add
-                                </Link>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
         </div>
 
         {/* User footer */}
