@@ -153,9 +153,9 @@ export default function AgentPage() {
       </div>
 
       {agentEnabled && (
-        <div className="rounded-xl border border-green-500/30 bg-green-500/5 px-5 py-3 flex items-center gap-3">
-          <div className="h-2 w-2 rounded-full bg-green-400 animate-pulse" />
-          <p className="text-sm text-green-400 font-medium">Agent is active</p>
+        <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 px-5 py-3 flex items-center gap-3">
+          <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+          <p className="text-sm text-emerald-600 font-medium">Agent is active</p>
           <p className="text-sm text-muted-foreground">— Scanning AI answers daily at 9am · Monitoring 5 competitor brands · Tracking 23 prompts across 6 LLMs</p>
         </div>
       )}
