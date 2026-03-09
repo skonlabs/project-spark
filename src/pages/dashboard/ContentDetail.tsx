@@ -24,6 +24,7 @@ import {
 } from "@/data/products";
 import type { LLMIntentType } from "@/data/products";
 import { useContent } from "@/contexts/ContentContext";
+import { supabase } from "@/integrations/supabase/client";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
