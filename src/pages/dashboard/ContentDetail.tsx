@@ -45,21 +45,11 @@ const INTENTS: Array<{ id: LLMIntentType; label: string; desc: string; example: 
   { id: "troubleshoot", label: "Troubleshoot / Fix", desc: "User is diagnosing a problem or seeking a fix", example: '"Why is my LLM giving wrong answers?"' },
 ];
 
-// Demo prompts generated from content analysis, grouped by intent
-const DEMO_GENERATED_PROMPTS: Array<{ text: string; intent: LLMIntentType }> = [
-  { text: "What is AI observability?", intent: "seek_explanation" },
-  { text: "How does AI observability work?", intent: "seek_explanation" },
-  { text: "What is LLM monitoring and why does it matter?", intent: "seek_explanation" },
-  { text: "Best AI observability platforms 2026", intent: "find_best" },
-  { text: "Top LLM monitoring tools for production", intent: "find_best" },
-  { text: "GAEO Platform vs LangSmith — which is better?", intent: "compare" },
-  { text: "AI observability vs traditional APM monitoring", intent: "compare" },
-  { text: "How to set up LLM monitoring in production?", intent: "learn_howto" },
-  { text: "How to detect model drift in production?", intent: "learn_howto" },
-  { text: "LangSmith alternatives for AI monitoring", intent: "find_alternative" },
-  { text: "Open source LLM observability tools", intent: "find_alternative" },
-  { text: "Why is my LLM giving inconsistent outputs?", intent: "troubleshoot" },
-];
+// Type for generated prompts
+interface GeneratedPrompt {
+  text: string;
+  intent: LLMIntentType;
+}
 
 const ENHANCEMENTS = [
   { id: "entity_definition", label: "Add entity definition block", desc: "Clear 'X is Y' statement in intro" },
