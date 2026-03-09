@@ -127,6 +127,50 @@ export function ContentProvider({ children }: { children: ReactNode }) {
       word_count?: number;
     }): string => {
       const id = `dynamic-${Date.now()}`;
+      
+      // Generate content immediately
+      let rawContent: string;
+      if (source_type === "url" && url) {
+        try {
+          const parsed = new URL(url.startsWith("http") ? url : `https://${url}`);
+          const domain = parsed.hostname.replace("www.", "");
+          const pathParts = parsed.pathname.split("/").filter(Boolean);
+          const slug = pathParts[pathParts.length - 1]?.replace(/[-_]/g, " ") || title;
+          rawContent = [
+            `# ${title}`,
+            ``,
+            `> Source: [${domain}](${url})`,
+            ``,
+            `## Overview`,
+            ``,
+            `This content was ingested from **${domain}** and is being analyzed for AI visibility optimization.`,
+            ``,
+            `## Page Details`,
+            ``,
+            `- **URL**: ${url}`,
+            `- **Domain**: ${domain}`,
+            `- **Path**: ${parsed.pathname || "/"}`,
+            ...(pathParts.length > 0 ? [`- **Section**: ${pathParts.map(p => p.replace(/[-_]/g, " ")).join(" → ")}`] : []),
+            `- **Ingested**: ${new Date().toLocaleString()}`,
+            ``,
+            `## Content Summary`,
+            ``,
+            `The page "${slug}" from ${domain} has been ingested for analysis. The AI visibility score and recommendations will be generated based on the content structure, entity clarity, and prompt coverage.`,
+            ``,
+            `## Analysis Notes`,
+            ``,
+            `- Entity definitions need to be verified`,
+            `- FAQ section coverage will be evaluated`,
+            `- Competitive positioning signals will be extracted`,
+            `- Prompt alignment will be scored against known LLM queries`,
+          ].join("\n");
+        } catch {
+          rawContent = `# ${title}\n\nContent from ${url}.\n\nIngested: ${new Date().toLocaleString()}`;
+        }
+      } else {
+        rawContent = `# ${title}\n\nContent ingested from ${source_type === "file" ? "uploaded file" : "crawl"}.\n\nSource: ${url}\nIngested: ${new Date().toLocaleString()}\nType: ${source_type}\n`;
+      }
+
       const newItem: ContentItem = {
         id,
         title,
@@ -134,9 +178,9 @@ export function ContentProvider({ children }: { children: ReactNode }) {
         source_type,
         status: "processing",
         score: null,
-        word_count: word_count ?? null,
+        word_count: word_count ?? rawContent.split(/\s+/).length,
         ingested_at: new Date().toISOString(),
-        raw_content: null, // Will be populated after fetch
+        raw_content: rawContent,
       };
 
       setProducts((prev) =>
@@ -152,67 +196,6 @@ export function ContentProvider({ children }: { children: ReactNode }) {
         )
       );
 
-      // Generate content from URL and auto-analyze
-      const generateContentFromUrl = (url: string, title: string): string => {
-        try {
-          const parsed = new URL(url);
-          const domain = parsed.hostname.replace("www.", "");
-          const pathParts = parsed.pathname.split("/").filter(Boolean);
-          const slug = pathParts[pathParts.length - 1]?.replace(/[-_]/g, " ") || title;
-          
-          return [
-            `# ${title}`,
-            "",
-            `> Source: [${domain}](${url})`,
-            "",
-            `## Overview`,
-            "",
-            `This content was ingested from **${domain}** and is being analyzed for AI visibility optimization.`,
-            "",
-            `## Page Details`,
-            "",
-            `- **URL**: ${url}`,
-            `- **Domain**: ${domain}`,
-            `- **Path**: ${parsed.pathname || "/"}`,
-            pathParts.length > 0 ? `- **Section**: ${pathParts.map(p => p.replace(/[-_]/g, " ")).join(" → ")}` : "",
-            `- **Ingested**: ${new Date().toLocaleString()}`,
-            "",
-            `## Content Summary`,
-            "",
-            `The page "${slug}" from ${domain} has been ingested for analysis. The AI visibility score and recommendations will be generated based on the content structure, entity clarity, and prompt coverage.`,
-            "",
-            `## Analysis Notes`,
-            "",
-            `- Entity definitions need to be verified`,
-            `- FAQ section coverage will be evaluated`,
-            `- Competitive positioning signals will be extracted`,
-            `- Prompt alignment will be scored against known LLM queries`,
-            "",
-          ].filter(Boolean).join("\n");
-        } catch {
-          return `# ${title}\n\nContent from ${url}.\n\nIngested: ${new Date().toLocaleString()}`;
-        }
-      };
-
-      const content = source_type === "url" && url
-        ? generateContentFromUrl(url, title)
-        : `# ${title}\n\nContent ingested from ${source_type === "file" ? "uploaded file" : "crawl"}.\n\nSource: ${url}\nIngested: ${new Date().toLocaleString()}\nType: ${source_type}\n`;
-
-      // Update content immediately
-      setProducts((prev) =>
-        prev.map((p) => ({
-          ...p,
-          folders: p.folders.map((f) => ({
-            ...f,
-            items: f.items.map((item) =>
-              item.id === id
-                ? { ...item, raw_content: content, word_count: content.split(/\s+/).length }
-                : item
-            ),
-          })),
-        }))
-      );
-
       // Simulate analysis after a short delay
       setTimeout(() => {
         updateItemStatus(id, "analyzed", Math.floor(Math.random() * 30) + 35);
@@ -220,7 +203,7 @@ export function ContentProvider({ children }: { children: ReactNode }) {
 
       return id;
     },
-    []
+    [updateItemStatus]
   );
 
   const updateItemStatus = useCallback(
