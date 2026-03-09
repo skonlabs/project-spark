@@ -50,6 +50,7 @@ interface ContentContextValue {
     word_count?: number;
   }) => string; // returns new item id
   updateItemStatus: (contentId: string, status: ContentItem["status"], score?: number) => void;
+  addFolder: (productId: string, folderName: string) => string; // returns new folder id
 }
 
 const ContentContext = createContext<ContentContextValue | null>(null);
