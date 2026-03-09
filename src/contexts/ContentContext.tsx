@@ -217,7 +217,11 @@ export function ContentProvider({ children }: { children: ReactNode }) {
       setTimeout(() => {
         updateItemStatus(id, "analyzed", Math.floor(Math.random() * 30) + 35);
       }, 2500);
-  }
+
+      return id;
+    },
+    []
+  );
 
   const updateItemStatus = useCallback(
     (contentId: string, status: ContentItem["status"], score?: number) => {
