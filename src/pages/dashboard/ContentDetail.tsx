@@ -359,14 +359,55 @@ export default function ContentDetailPage() {
     setEnhancements((prev) => ({ ...prev, [id]: !prev[id] }));
   }
 
-  function handleGeneratePrompts() {
+  async function handleGeneratePrompts() {
     setIsGeneratingPrompts(true);
     setSelectedPrompts(new Set());
-    setTimeout(() => {
-      setGeneratedPrompts(DEMO_GENERATED_PROMPTS);
+    setGeneratedPrompts(null);
+    
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-prompts`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({
+            contentTitle: item.title,
+            contentBody: item.raw_content,
+            productName: product.name,
+            productCategory: product.category,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        if (response.status === 429) {
+          toast.error("Rate limit exceeded. Please try again later.");
+        } else if (response.status === 402) {
+          toast.error("Payment required. Please add credits to your workspace.");
+        } else {
+          toast.error(errorData.error || "Failed to generate prompts");
+        }
+        setIsGeneratingPrompts(false);
+        return;
+      }
+
+      const data = await response.json();
+      if (data.prompts && Array.isArray(data.prompts)) {
+        setGeneratedPrompts(data.prompts);
+        toast.success(`${data.prompts.length} prompts generated from your content!`);
+      } else {
+        toast.error("Invalid response from AI");
+      }
+    } catch (error) {
+      console.error("Error generating prompts:", error);
+      toast.error("Failed to generate prompts. Please try again.");
+    } finally {
       setIsGeneratingPrompts(false);
-      toast.success("12 prompts generated from your content!");
-    }, 1600);
+    }
   }
 
   function togglePromptSelection(text: string) {
