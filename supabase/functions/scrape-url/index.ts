@@ -82,13 +82,26 @@ Deno.serve(async (req) => {
 
     const normalizedUrl = url.startsWith("http") ? url : `https://${url}`;
 
-    const response = await fetch(normalizedUrl, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (compatible; GAEOBot/1.0)",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-      },
-      redirect: "follow",
-    });
+    // Try fetching with realistic browser headers; retry once on failure
+    const headers = {
+      "User-Agent":
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      "Accept":
+        "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+      "Accept-Language": "en-US,en;q=0.9",
+      "Accept-Encoding": "identity",
+      "Cache-Control": "no-cache",
+      "Pragma": "no-cache",
+    };
+
+    let response: Response;
+    try {
+      response = await fetch(normalizedUrl, { headers, redirect: "follow" });
+    } catch (fetchErr) {
+      // Retry once – some hosts reject the first connection attempt
+      console.warn("First fetch attempt failed, retrying…", fetchErr);
+      response = await fetch(normalizedUrl, { headers, redirect: "follow" });
+    }
 
     if (!response.ok) {
       return new Response(
