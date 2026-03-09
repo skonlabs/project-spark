@@ -569,7 +569,7 @@ export default function ContentDetailPage() {
                 </p>
               </div>
             ) : (
-              <div className="rounded-xl border border-border bg-muted/10 p-6">
+              <div className="rounded-xl border border-border bg-muted/10 p-6 max-h-[500px] overflow-y-auto">
                 <pre className="text-sm text-foreground whitespace-pre-wrap font-sans leading-relaxed">
                   {item.raw_content ?? "No content preview available."}
                 </pre>
