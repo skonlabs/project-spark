@@ -83,9 +83,9 @@ export default function ContentPage() {
   const preselectedProductId = searchParams.get("product");
   const preselectedFolderId = searchParams.get("folder");
   
-  const [selectedProductId, setSelectedProductId] = useState(preselectedProductId || products[0]?.id ?? "");
+  const [selectedProductId, setSelectedProductId] = useState(preselectedProductId ?? (products[0]?.id ?? ""));
   const selectedProduct = products.find((p) => p.id === selectedProductId) ?? products[0];
-  const [selectedFolderId, setSelectedFolderId] = useState(preselectedFolderId || selectedProduct?.folders[0]?.id ?? "");
+  const [selectedFolderId, setSelectedFolderId] = useState(preselectedFolderId ?? (selectedProduct?.folders[0]?.id ?? ""));
   const selectedFolder = selectedProduct?.folders.find((f) => f.id === selectedFolderId) ?? selectedProduct?.folders[0];
 
   // Library filters

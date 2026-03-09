@@ -161,9 +161,27 @@ export function ContentProvider({ children }: { children: ReactNode }) {
     []
   );
 
+  const addFolder = useCallback(
+    (productId: string, folderName: string): string => {
+      const id = `folder-${Date.now()}`;
+      setProducts((prev) =>
+        prev.map((p) =>
+          p.id === productId
+            ? {
+                ...p,
+                folders: [...p.folders, { id, name: folderName, items: [] }],
+              }
+            : p
+        )
+      );
+      return id;
+    },
+    []
+  );
+
   return (
     <ContentContext.Provider
-      value={{ products, getAnalysis, findContent, addContentItem, updateItemStatus }}
+      value={{ products, getAnalysis, findContent, addContentItem, updateItemStatus, addFolder }}
     >
       {children}
     </ContentContext.Provider>
