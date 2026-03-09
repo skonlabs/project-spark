@@ -167,24 +167,37 @@ export default function ContentPage() {
   }
 
   // ── Create folder handler ─────────────────────────────────────────────────
-  function handleCreateFolder() {
+  async function handleCreateFolder() {
     if (!newFolderName.trim()) {
       toast.error("Please enter a folder name");
       return;
     }
-    addFolder(newFolderProductId, newFolderName.trim());
-    toast.success(`Folder "${newFolderName}" created`);
-    setNewFolderName("");
-    setShowCreateFolder(false);
+    if (!newFolderProductId) {
+      toast.error("Please select a product first");
+      return;
+    }
+    try {
+      await addFolder(newFolderProductId, newFolderName.trim());
+      toast.success(`Folder "${newFolderName}" created`);
+      setNewFolderName("");
+      setShowCreateFolder(false);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to create folder");
+    }
   }
 
   // ── Ingest handler ────────────────────────────────────────────────────────
   async function ingest(title: string, url: string, sourceType: "url" | "file" | "crawl") {
-    if (!selectedProduct || !selectedFolder) { toast.error("Select a product and folder first."); return; }
-    const itemId = await addContentItem({
-      productId: selectedProduct.id, folderId: selectedFolder.id, title, url, source_type: sourceType,
-    });
-    return itemId;
+    if (!selectedProduct) { toast.error("Please create a product first."); return; }
+    if (!selectedFolder) { toast.error("Please select a folder first."); return; }
+    try {
+      const itemId = await addContentItem({
+        productId: selectedProduct.id, folderId: selectedFolder.id, title, url, source_type: sourceType,
+      });
+      return itemId;
+    } catch (err: any) {
+      toast.error(err.message || "Failed to ingest content");
+    }
   }
 
   function handleBatchUpload() {
@@ -654,7 +667,7 @@ export default function ContentPage() {
             </div>
             
             <div className="flex gap-2 mt-5">
-              <button onClick={handleCreateFolder} disabled={!newFolderName.trim()} className="flex-1 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground disabled:opacity-60">
+              <button onClick={handleCreateFolder} disabled={!newFolderName.trim() || !newFolderProductId} className="flex-1 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground disabled:opacity-60">
                 Create Folder
               </button>
               <button onClick={() => setShowCreateFolder(false)} className="rounded-lg border border-border bg-background px-4 py-2.5 text-sm font-medium hover:bg-accent transition-colors">
